@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -149,6 +149,11 @@ describe("AmbientModuleIndex", () => {
 		} finally {
 			chmodSync(locked, 0o755)
 		}
+	})
+
+	it("skips declaration files it can't read, such as dangling symlinks", () => {
+		symlinkSync(path.join(dir, "missing.d.ts"), path.join(dir, "types/dangling.d.ts"))
+		expect(new AmbientModuleIndex().exact(dir, "exact")).toBeDefined()
 	})
 
 	it("handles a missing root", () => {

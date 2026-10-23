@@ -110,7 +110,8 @@ export function findJsDocComments(
 }
 
 const tagNameStart = /[\p{ID_Start}$_]/u
-const tagNamePart = /[\p{ID_Continue}$\u200c\u200d]/u
+// TypeScript's JSDoc scanner also takes `-` in tag names (`@private-api` is not `@private`).
+const tagNamePart = /[-\p{ID_Continue}$\u200c\u200d]/u
 
 /**
  * Parse the block tags of a JSDoc comment the way TypeScript does.

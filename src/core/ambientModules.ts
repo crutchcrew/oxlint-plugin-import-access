@@ -5,7 +5,7 @@ import { parseSync } from "oxc-parser"
 import type { Declaration, ModuleExportName, Statement } from "oxc-parser"
 
 import type { ExportEntry, ModuleExports } from "./exportTable.ts"
-import { createModuleExports } from "./exportTable.ts"
+import { createModuleExports, EXPORT_EQUALS } from "./exportTable.ts"
 
 const declarationFilePattern = /\.d\.[cm]?ts$/
 const ambientModulePattern = /\bdeclare\s+module\s+["']/
@@ -117,6 +117,13 @@ function moduleBlockExports(
 					own: { kind: "statement" },
 				})
 				break
+			case "TSExportAssignment":
+				add(EXPORT_EQUALS, {
+					checked: true,
+					statementStart: statement.start,
+					own: { kind: "statement" },
+				})
+				break
 			case "ExportAllDeclaration":
 				if (statement.exported) {
 					add(exportNameOf(statement.exported), {
@@ -200,7 +207,13 @@ export class AmbientModuleIndex {
 		if (index === undefined) {
 			index = { exact: new Map(), patterns: [] }
 			for (const fileName of declarationFiles(rootDir)) {
-				const text = readFileSync(fileName, "utf8")
+				let text: string
+				try {
+					text = readFileSync(fileName, "utf8")
+				} catch {
+					// Dangling symlinks, unreadable files: TypeScript wouldn't see them either.
+					continue
+				}
 				if (!ambientModulePattern.test(text)) {
 					continue
 				}

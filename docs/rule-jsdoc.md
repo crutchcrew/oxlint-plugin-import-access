@@ -349,3 +349,5 @@ Results match upstream on its whole test suite and on additional fixtures for re
 - **Only the nearest `tsconfig.json`** is used for `paths`. Aliases defined in a differently named config file (such as `tsconfig.app.json`) that isn't referenced from `tsconfig.json` are not resolved.
 - **Declaration merging across files** (module augmentation) is not followed; the JSDoc of the declarations in the resolved file counts.
 - **Ambiguous `export *` names**, which TypeScript reports as an error, resolve to the first match.
+- **Files with syntax errors**: exports that oxc-parser can't recover are not seen, so imports of them are not checked. TypeScript recovers from more errors.
+- **`export * from` inside ambient modules** is not followed, and repeated `declare module "x"` blocks are not merged (the first one counts).

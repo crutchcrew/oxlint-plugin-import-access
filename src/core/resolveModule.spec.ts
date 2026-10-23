@@ -39,6 +39,19 @@ describe("ModuleResolver", () => {
 		expect(resolver.resolve(importer, "../reexport/sub")).not.toBe(first)
 	})
 
+	it("keeps `./foo` (foo.ts) and `./foo/` (foo/index.ts) apart", () => {
+		const fresh = new ModuleResolver()
+		const user = path.join(projectRoot, "src/edge/reviewUser.ts")
+		expect(fresh.resolve(user, "./review/lib/foo/")).toEqual({
+			kind: "internal",
+			fileName: path.join(projectRoot, "src/edge/review/lib/foo/index.ts"),
+		})
+		expect(fresh.resolve(user, "./review/lib/foo")).toEqual({
+			kind: "internal",
+			fileName: path.join(projectRoot, "src/edge/review/lib/foo.ts"),
+		})
+	})
+
 	it("checks that the workspace fixtures are really symlinked into node_modules", () => {
 		// Guards against vacuous passes: an unresolved workspace import would also be skipped.
 		const checker = new ImportabilityChecker()

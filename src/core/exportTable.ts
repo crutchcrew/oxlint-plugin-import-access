@@ -56,9 +56,12 @@ export const EXPORT_EQUALS = "export="
  * Text that has to be present for a file to contain any access tag.
  * `@public` is not listed: it only ever restores the default `public`.
  */
-const accessTagPattern = /@(?:package|private|access)(?![\p{ID_Continue}$])/u
-const starExportPattern = /\bexport\s+(?:type\s+)?\*/
-const exportEqualsPattern = /(?<![\p{ID_Continue}$.])export\s*=(?![=>])/gu
+const accessTagPattern = /@(?:package|private|access)(?![\p{ID_Continue}$-])/u
+/** `export * from` / `export type * from`, also without spaces or with comments in between. */
+const starExportPattern =
+	/\bexport(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*)*(?:type(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*)*)?\*/
+/** Hint that a file may contain `export = value`; the AST confirms it. */
+const exportEqualsHint = /\bexport\s*=(?!=)/
 
 export function skipTrivia(text: string, pos: number): number {
 	for (;;) {
@@ -77,7 +80,7 @@ export function skipTrivia(text: string, pos: number): number {
 	}
 }
 
-const identifierPattern = /[\p{ID_Start}$_][\p{ID_Continue}$‌‍]*/uy
+const identifierPattern = /[\p{ID_Start}$_][\p{ID_Continue}$\u200c\u200d]*/uy
 
 function wordAt(text: string, pos: number): string {
 	identifierPattern.lastIndex = pos
@@ -91,6 +94,10 @@ type DeclarationKind = "variable" | "checked" | "unchecked"
  * Upstream checks variables, functions, classes, type aliases and interfaces only.
  */
 function declarationKind(text: string, pos: number): DeclarationKind {
+	if (text.charCodeAt(pos) === 64 /* @ */) {
+		// `export @dec class …`: only classes take decorators.
+		return "checked"
+	}
 	let word = wordAt(text, pos)
 	if (word === "declare") {
 		pos = skipTrivia(text, pos + word.length)
@@ -143,53 +150,79 @@ function isInComment(comments: readonly Comment[], pos: number): boolean {
 	return false
 }
 
-/**
- * Whether `pos` starts the keyword `export` (not part of a longer identifier, not in a comment).
- */
-function isExportKeywordAt(text: string, comments: readonly Comment[], pos: number): boolean {
-	return !isInComment(comments, pos) && (pos === 0 || !/[\p{ID_Continue}$.]/u.test(text[pos - 1]!))
-}
-
-/**
- * Start of the `export` statement an entry belongs to.
- *
- * oxc-parser files `import { a } from "./a"; export { a }` under the *import* statement
- * (the export becomes an indirect export of `./a`), so the statement start it reports
- * can be the import. The JSDoc that matters is on the `export { … }` statement.
- */
-function exportStatementStart(
-	text: string,
-	comments: readonly Comment[],
-	statementStart: number,
-	entryStart: number,
-): number {
-	if (text.startsWith("export", statementStart)) {
-		return statementStart
-	}
-	let pos = text.lastIndexOf("export", entryStart)
-	while (pos > 0 && !isExportKeywordAt(text, comments, pos)) {
-		pos = text.lastIndexOf("export", pos - 1)
-	}
-	return pos
-}
-
-/**
- * Starts of `export = value` statements (absent from oxc-parser's module record).
- */
-function exportEqualsStarts(text: string, comments: readonly Comment[]): number[] {
-	const starts: number[] = []
-	for (const match of text.matchAll(exportEqualsPattern)) {
-		if (!isInComment(comments, match.index)) {
-			starts.push(match.index)
+/** Whether the file may contain decorators: an `@` outside comments. */
+function mayHaveDecorators(text: string, comments: readonly Comment[]): boolean {
+	for (let pos = text.indexOf("@"); pos !== -1; pos = text.indexOf("@", pos + 1)) {
+		if (!isInComment(comments, pos)) {
+			return true
 		}
 	}
-	return starts
+	return false
 }
 
-type VariableDeclarators = {
-	readonly single: boolean
-	/** Start and end of each declarator. */
-	readonly spans: readonly (readonly [number, number])[]
+/** Initializers whose own JSDoc TypeScript reads for the variable (but not class expressions). */
+const jsDocInitializers = new Set([
+	"ArrowFunctionExpression",
+	"FunctionExpression",
+	"ParenthesizedExpression",
+])
+
+type Declarator = {
+	readonly start: number
+	readonly end: number
+	/** Start of an initializer that carries JSDoc for the variable. */
+	readonly initializer: number | undefined
+}
+
+/**
+ * What only the syntax tree can tell. Built lazily, for the few files that need it.
+ */
+type SyntaxDetails = {
+	/** Start of the first decorator of decorated `export class` statements, by statement start. */
+	readonly decoratorStarts: ReadonlyMap<number, number>
+	/** Spans of `export { … }` statements without a source. */
+	readonly exportLists: readonly (readonly [number, number])[]
+	/** Starts of `export = value` statements. */
+	readonly exportEquals: readonly number[]
+	/** Declarators of exported variable statements, by statement start. */
+	readonly variables: ReadonlyMap<number, readonly Declarator[]>
+}
+
+function syntaxDetails(program: Program): SyntaxDetails {
+	const decoratorStarts = new Map<number, number>()
+	const exportLists: (readonly [number, number])[] = []
+	const exportEquals: number[] = []
+	const variables = new Map<number, Declarator[]>()
+	for (const statement of program.body) {
+		switch (statement.type) {
+			case "ExportNamedDeclaration":
+			case "ExportDefaultDeclaration": {
+				const { declaration } = statement
+				if (declaration?.type === "ClassDeclaration") {
+					const first = declaration.decorators[0]
+					if (first !== undefined && first.start < statement.start) {
+						decoratorStarts.set(statement.start, first.start)
+					}
+				} else if (declaration?.type === "VariableDeclaration") {
+					variables.set(
+						statement.start,
+						declaration.declarations.map(({ start, end, init }) => ({
+							start,
+							end,
+							initializer: init && jsDocInitializers.has(init.type) ? init.start : undefined,
+						})),
+					)
+				} else if (declaration === null) {
+					exportLists.push([statement.start, statement.end])
+				}
+				break
+			}
+			case "TSExportAssignment":
+				exportEquals.push(statement.start)
+				break
+		}
+	}
+	return { decoratorStarts, exportLists, exportEquals, variables }
 }
 
 export function createModuleExports(
@@ -198,7 +231,7 @@ export function createModuleExports(
 	comments: readonly Comment[],
 	names: ReadonlyMap<string, readonly ExportEntry[]> | undefined,
 	stars: readonly string[],
-	program?: () => Program,
+	details?: () => SyntaxDetails,
 ): ModuleExports {
 	const tagCache = new Map<string, NodeTags>()
 	const tagsAt = (start: number, includeSameLine: boolean): NodeTags => {
@@ -211,24 +244,6 @@ export function createModuleExports(
 		return tags
 	}
 
-	let declarators: Map<number, VariableDeclarators> | undefined
-	const declaratorsOf = (statementStart: number): VariableDeclarators | undefined => {
-		if (declarators === undefined) {
-			declarators = new Map()
-			for (const statement of program!().body) {
-				const declaration =
-					statement.type === "ExportNamedDeclaration" ? statement.declaration : undefined
-				if (declaration?.type === "VariableDeclaration") {
-					declarators.set(statement.start, {
-						single: declaration.declarations.length === 1,
-						spans: declaration.declarations.map(({ start, end }) => [start, end] as const),
-					})
-				}
-			}
-		}
-		return declarators.get(statementStart)
-	}
-
 	const ownTags = (entry: ExportEntry): readonly Tag[] => {
 		const { own } = entry
 		switch (own.kind) {
@@ -239,24 +254,29 @@ export function createModuleExports(
 			case "none":
 				return []
 		}
-		// A variable: only a JSDoc comment inside the statement can belong to a declarator,
-		// otherwise the statement's JSDoc is all there is.
+		// A variable. TypeScript gives the statement's last JSDoc block to the first declarator only,
+		// and reads JSDoc on each declarator and on function-like initializers. That only matters
+		// with JSDoc inside the statement or several JSDoc blocks before it.
+		const statementTags = tagsAt(entry.statementStart, false)
 		const inner = comments.some(
 			(comment) =>
 				comment.start > entry.statementStart &&
 				comment.end <= own.statementEnd &&
 				comment.value.startsWith("*"),
 		)
-		const statementTags = tagsAt(entry.statementStart, false).own
-		const variables = inner ? declaratorsOf(entry.statementStart) : undefined
-		if (variables === undefined) {
-			return statementTags
+		if (!inner && statementTags.all.length === statementTags.own.length) {
+			return statementTags.own
 		}
-		const span = variables.spans.find(
-			([start, end]) => start <= own.nameStart && own.nameStart < end,
-		)!
-		const declaratorTags = tagsAt(span[0], true).own
-		return variables.single ? [...declaratorTags, ...statementTags] : declaratorTags
+		const declarators = details!().variables.get(entry.statementStart)!
+		const index = declarators.findIndex(
+			({ start, end }) => start <= own.nameStart && own.nameStart < end,
+		)
+		const declarator = declarators[index]!
+		return [
+			...(declarator.initializer === undefined ? [] : tagsAt(declarator.initializer, true).own),
+			...tagsAt(declarator.start, true).own,
+			...(index === 0 ? statementTags.own : []),
+		]
 	}
 
 	return {
@@ -274,9 +294,9 @@ export function createModuleExports(
 /**
  * Build the export table of a module from its source text.
  *
- * Only oxc-parser's module record and comments are read; the AST is only deserialized
- * for the rare JSDoc comment inside a variable statement. That is several times faster
- * than walking `program`.
+ * Mostly oxc-parser's module record and comments are read. The syntax tree, several times
+ * slower to get, is only used for files with decorators, `export =`, re-exported imports
+ * or JSDoc inside variable statements.
  */
 export function parseModuleExports(
 	fileName: string,
@@ -289,6 +309,10 @@ export function parseModuleExports(
 
 	const result = parseSync(fileName, text)
 	const { comments } = result
+	let cachedDetails: SyntaxDetails | undefined
+	const details = () => (cachedDetails ??= syntaxDetails(result.program))
+	const decorated = mayHaveDecorators(text, comments)
+
 	const names = new Map<string, ExportEntry[]>()
 	const stars: string[] = []
 	const add = (name: string, entry: ExportEntry) => {
@@ -307,7 +331,14 @@ export function parseModuleExports(
 				stars.push(moduleRequest!.value)
 				continue
 			}
-			const statementStart = exportStatementStart(text, comments, statement.start, entry.start)
+			let statementStart = statement.start
+			if (!text.startsWith("export", statementStart)) {
+				// oxc-parser files `import { a } from "./a"; export { a }` under the *import* statement
+				// (an indirect export of `./a`); the JSDoc that matters is on the `export { … }`.
+				statementStart = details().exportLists.find(
+					([start, end]) => start <= entry.start && entry.start < end,
+				)![0]
+			}
 			let checked = true
 			let own: OwnJsDoc = { kind: "statement" }
 			if (isSpecifierList(text, statementStart)) {
@@ -323,16 +354,21 @@ export function parseModuleExports(
 			}
 			add(exportName.kind === "Default" ? "default" : exportName.name!, {
 				checked,
-				statementStart,
+				// JSDoc of a decorated class goes before its first decorator.
+				statementStart: decorated
+					? (details().decoratorStarts.get(statementStart) ?? statementStart)
+					: statementStart,
 				own,
 			})
 		}
 	}
-	for (const start of exportEqualsStarts(text, comments)) {
-		add(EXPORT_EQUALS, { checked: true, statementStart: start, own: { kind: "statement" } })
+	if (exportEqualsHint.test(text)) {
+		for (const start of details().exportEquals) {
+			add(EXPORT_EQUALS, { checked: true, statementStart: start, own: { kind: "statement" } })
+		}
 	}
 
-	return createModuleExports(fileName, text, comments, names, stars, () => result.program)
+	return createModuleExports(fileName, text, comments, names, stars, details)
 }
 
 type CacheEntry = {
@@ -382,7 +418,13 @@ export class ExportTableCache {
 			usable.generation = this.#generation
 			return usable.exports
 		}
-		const exports = parseModuleExports(fileName, readFileSync(fileName, "utf8"), assumeAllPublic)
+		let text: string
+		try {
+			text = readFileSync(fileName, "utf8")
+		} catch {
+			return undefined
+		}
+		const exports = parseModuleExports(fileName, text, assumeAllPublic)
 		this.#entries.set(fileName, {
 			mtimeMs: stats.mtimeMs,
 			size: stats.size,

@@ -31,9 +31,11 @@ afterEach(() => {
 	rmSync(dir, { recursive: true, force: true })
 })
 
-describe("ImportabilityChecker", () => {
-	const policy = () => new ImportabilityPolicy(normalizeOptions(undefined, dir))
+function policy(): ImportabilityPolicy {
+	return new ImportabilityPolicy(normalizeOptions(undefined, dir))
+}
 
+describe("ImportabilityChecker", () => {
 	it("reads each file once in a one-shot run, and re-validates once files are linted again", () => {
 		const checker = new ImportabilityChecker(false)
 		checker.nextFile(user)

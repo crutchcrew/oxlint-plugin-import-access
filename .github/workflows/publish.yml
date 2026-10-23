@@ -51,9 +51,13 @@ jobs:
       - name: End-to-end
         run: bun run test:e2e
 
-      # Trusted publishing (OIDC): no token needed once the package's trusted publisher is configured on npmjs.com.
+      # Trusted publishing (OIDC) once the package's trusted publisher is configured on npmjs.com.
+      # npm can only configure that for an existing package, so the first release falls back to an
+      # `NPM_TOKEN` repository secret; delete the secret after configuring the trusted publisher.
       - name: Publish to npm
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release
         env:

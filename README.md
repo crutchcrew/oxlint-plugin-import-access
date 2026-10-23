@@ -127,11 +127,11 @@ Generated project with nested feature directories, `export *` barrels and 6 impo
 
 | Modules (imports) | ESLint + eslint-plugin-import-access | oxlint + this plugin | Speedup |
 | ----------------- | ------------------------------------ | -------------------- | ------- |
-| 1,000 (6,000)     | 1.90 s                               | **0.29 s**           | 6.6×    |
+| 1,000 (6,000)     | 1.90 s                               | **0.31 s**           | 6.1×    |
 | 2,500 (15,000)    | 4.89 s ¹                             | **0.55 s**           | 8.9×    |
-| 5,000 (30,000)    | fails after 524 s ²                  | **1.12 s**           | –       |
+| 5,000 (30,000)    | fails after 524 s ²                  | **0.95 s**           | –       |
 
-ESLint 10 with typescript-eslint 8 typed linting (`projectService`), single run; oxlint best of 3. Both report identical diagnostics on every file the TypeScript-based rule can analyze. Of the 1.12 s, about 0.33 s is oxlint's own cost of running any JS plugin over 5,000 files.
+ESLint 10 with typescript-eslint 8 typed linting (`projectService`), single run; oxlint best of 3. Both report identical diagnostics on every file the TypeScript-based rule can analyze. Of the 0.95 s, about 0.33 s is oxlint's own cost of running any JS plugin over 5,000 files.
 
 ¹ TypeScript fails on 16 of the 2,600 files ("Maximum call stack size exceeded"), so those files went unchecked.
 ² TypeScript fails on every file of this heavily cyclic project.

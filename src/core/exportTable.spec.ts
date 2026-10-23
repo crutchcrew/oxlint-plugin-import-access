@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -87,7 +87,8 @@ export const first = 1, /** @package */ second = 2
 export const /** @package */ only = 1
 export const { /** @package */ destructured } = { destructured: 1 }
 `)
-		expect(summary["first"]!.tags).toEqual(["private"])
+		// The statement's last JSDoc block belongs to the first declarator only.
+		expect(summary["first"]!.tags).toEqual(["private", "private"])
 		expect(summary["second"]!.tags).toEqual(["package", "private"])
 		expect(summary["only"]!.tags).toEqual(["package", "public", "public"])
 		expect(summary["destructured"]!.tags).toEqual([])
@@ -154,7 +155,19 @@ export // comment
 		expect(
 			parseModuleExports("/virtual/a.ts", "/** @package */ export const a = 1", true).names,
 		).toBeDefined()
-		expect(parseModuleExports("/virtual/a.ts", 'export * from "./b"', true).names).toBeDefined()
+		for (const star of [
+			'export * from "./b"',
+			'export*from"./b"',
+			'export /**/ * from "./b"',
+			'export type*from"./b"',
+			'export // x\n* from "./b"',
+		]) {
+			expect(parseModuleExports("/virtual/a.ts", star, true).names, star).toBeDefined()
+		}
+		expect(
+			parseModuleExports("/virtual/a.ts", "/** @package-internal */ export const a = 1", true)
+				.names,
+		).toBeUndefined()
 		expect(parseModuleExports("/virtual/a.ts", "export const a = 1", false).names).toBeDefined()
 	})
 })
@@ -182,6 +195,17 @@ describe("ExportTableCache", () => {
 
 	it("returns undefined for unreadable files", () => {
 		expect(new ExportTableCache().get(path.join(dir, "missing.ts"), false)).toBeUndefined()
+	})
+
+	it("returns undefined for files that exist but can't be read", () => {
+		const file = path.join(dir, "locked.ts")
+		writeFileSync(file, "/** @package */ export const a = 1")
+		chmodSync(file, 0o000)
+		try {
+			expect(new ExportTableCache().get(file, false)).toBeUndefined()
+		} finally {
+			chmodSync(file, 0o644)
+		}
 	})
 
 	it("re-validates once per generation and re-parses changed files", () => {

@@ -82,6 +82,13 @@ describe("parseJsDocTags", () => {
 		expect(parseJsDocTags(block(source))).toEqual(expected)
 	})
 
+	it("reads hyphenated tag names whole, like TypeScript", () => {
+		expect(parseJsDocTags(block("/** @private-api @package */"))).toEqual([
+			{ name: "private-api", text: "" },
+			{ name: "package", text: "" },
+		])
+	})
+
 	it("ignores a lone `@` at the end of the comment", () => {
 		expect(parseJsDocTags(block("/** text @*/"))).toEqual([])
 	})

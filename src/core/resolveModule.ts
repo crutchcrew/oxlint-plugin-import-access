@@ -27,6 +27,8 @@ const jsonFilePattern = /\.json$/
 const nodeModulesPattern = /[/\\]node_modules[/\\]/
 
 const relativeSpecifier = /^\.{1,2}(?:[/\\]|$)/
+/** `./dir/`, `.`, `..`: specifiers that can only name a directory. */
+const directorySpecifier = /(?:^|[/\\])\.{0,2}$/
 
 /**
  * Resolves import specifiers like TypeScript would.
@@ -72,7 +74,10 @@ export class ModuleResolver {
 		let resolution = this.#byDirectory.get(directoryKey)
 		if (resolution === undefined) {
 			if (relativeSpecifier.test(specifier)) {
-				const target = path.resolve(importerDir, specifier)
+				// `./foo` may be `foo.ts` while `./foo/` is `foo/index.ts`: keep them apart.
+				const target =
+					path.resolve(importerDir, specifier) +
+					(directorySpecifier.test(specifier) ? path.sep : "")
 				resolution = this.#byTarget.get(target)
 				if (resolution === undefined) {
 					resolution = this.#resolveUncached(importerFileName, specifier)
