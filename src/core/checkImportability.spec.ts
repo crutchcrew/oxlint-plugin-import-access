@@ -1,0 +1,87 @@
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
+
+import { normalizeOptions } from "../utils/options.ts"
+import { ImportabilityChecker, ImportabilityPolicy } from "./checkImportability.ts"
+
+let dir: string
+let user: string
+let other: string
+let exporter: string
+
+function writeExporter(tag: string): void {
+	writeFileSync(exporter, `/** ${tag} */\nexport const value = 1\n`)
+	// Make sure the modification time differs even on coarse file systems.
+	const time = new Date(Date.now() + Math.random() * 100_000)
+	utimesSync(exporter, time, time)
+}
+
+beforeEach(() => {
+	dir = mkdtempSync(path.join(tmpdir(), "import-access-"))
+	mkdirSync(path.join(dir, "sub"))
+	exporter = path.join(dir, "sub/exporter.ts")
+	user = path.join(dir, "user.ts")
+	other = path.join(dir, "other.ts")
+	writeExporter("@package")
+})
+afterEach(() => {
+	rmSync(dir, { recursive: true, force: true })
+})
+
+describe("ImportabilityChecker", () => {
+	const policy = () => new ImportabilityPolicy(normalizeOptions(undefined, dir))
+
+	it("reads each file once in a one-shot run, and re-validates once files are linted again", () => {
+		const checker = new ImportabilityChecker(false)
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "./sub/exporter", "value")).toEqual({
+			access: "package",
+			identifier: "value",
+		})
+
+		writeExporter("@public")
+		// Still the first pass over the files: the snapshot is kept.
+		checker.nextFile(other)
+		expect(policy().check(checker, other, "./sub/exporter", "value")?.access).toBe("package")
+
+		// Linting `user.ts` again means files can change under us: re-validate.
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "./sub/exporter", "value")).toBeUndefined()
+	})
+
+	it("re-validates for every file in a language server", () => {
+		const checker = new ImportabilityChecker(true)
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "./sub/exporter", "value")?.access).toBe("package")
+		writeExporter("@private")
+		checker.nextFile(other)
+		expect(policy().check(checker, other, "./sub/exporter", "value")?.access).toBe("private")
+	})
+
+	it("picks up files created after a failed resolution in a language server", () => {
+		const checker = new ImportabilityChecker(true)
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "./sub/later", "value")).toBeUndefined()
+		writeFileSync(path.join(dir, "sub/later.ts"), "/** @package */\nexport const value = 1\n")
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "./sub/later", "value")?.access).toBe("package")
+	})
+
+	it("detects the language server from the command line by default", () => {
+		const argv = process.argv
+		process.argv = [...argv, "--lsp"]
+		try {
+			const checker = new ImportabilityChecker()
+			checker.nextFile(user)
+			expect(policy().check(checker, user, "./sub/exporter", "value")?.access).toBe("package")
+			writeExporter("@private")
+			checker.nextFile(other)
+			expect(policy().check(checker, other, "./sub/exporter", "value")?.access).toBe("private")
+		} finally {
+			process.argv = argv
+		}
+	})
+})

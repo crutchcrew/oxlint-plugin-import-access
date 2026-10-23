@@ -1,140 +1,106 @@
-import { minimatch } from "minimatch";
-import path from "path";
+import path from "node:path"
 
-export type PackageOptions = {
-  readonly indexLoophole: boolean;
-  readonly filenameLoophole: boolean;
-  readonly defaultImportability: "public" | "package" | "private";
-  readonly treatSelfReferenceAs: "internal" | "external";
-  readonly excludeSourcePatterns?: readonly string[];
-  readonly packageDirectory?: readonly string[];
-  readonly projectDirectory?: string;
-};
+import { Minimatch } from "minimatch"
 
-const indexFileRegExp = new RegExp(`\\/index\\.[cm]?[jt]sx?$`);
+import type { PackageOptions } from "./options.ts"
+
+const indexFileRegExp = /[/\\]index\.[cm]?[jt]sx?$/
+
+type CompiledPattern = { readonly negated: boolean; readonly matcher: Minimatch }
 
 /**
- * Checks if a directory matches the packageDirectory patterns.
- * Returns true if the directory should be treated as a package boundary.
+ * Decides which directory is the "package" of a file and whether two files share a package.
+ * Create one per options object: it memoizes per-directory answers.
  */
-function isPackageDirectory(
-  dir: string,
-  patterns: readonly string[],
-  projectDirectory?: string,
-): boolean {
-  const dirName = path.basename(dir);
-  // Get relative path from project directory if available
-  const relativePath = projectDirectory ? path.relative(projectDirectory, dir) : dir;
-  let matched = false;
+export class PackageBoundaries {
+	readonly #options: PackageOptions
+	readonly #patterns: readonly CompiledPattern[] | undefined
+	readonly #packageDirCache = new Map<string, string>()
 
-  for (const pattern of patterns) {
-    if (pattern.startsWith("!")) {
-      // Negation pattern - if it matches, this is NOT a package directory
-      const positivePattern = pattern.slice(1);
-      if (
-        minimatch(dirName, positivePattern) ||
-        minimatch(relativePath, positivePattern)
-      ) {
-        return false;
-      }
-    } else {
-      // Positive pattern - if it matches, this might be a package directory
-      if (
-        minimatch(dirName, pattern) ||
-        minimatch(relativePath, pattern)
-      ) {
-        matched = true;
-      }
-    }
-  }
+	constructor(options: PackageOptions) {
+		this.#options = options
+		const patterns = options.packageDirectory
+		this.#patterns =
+			patterns && patterns.length > 0
+				? patterns.map((pattern) => {
+						const negated = pattern.startsWith("!")
+						return { negated, matcher: new Minimatch(negated ? pattern.slice(1) : pattern) }
+					})
+				: undefined
+	}
 
-  return matched;
-}
+	/**
+	 * Whether `dir` matches the `packageDirectory` patterns (i.e. is a package boundary).
+	 */
+	#isPackageDirectory(dir: string, patterns: readonly CompiledPattern[]): boolean {
+		const dirName = path.basename(dir)
+		const relativePath = path.relative(this.#options.projectDirectory, dir)
+		let matched = false
+		for (const { negated, matcher } of patterns) {
+			if (matcher.match(dirName) || matcher.match(relativePath)) {
+				if (negated) {
+					return false
+				}
+				matched = true
+			}
+		}
+		return matched
+	}
 
-/**
- * Finds the package directory for a given file path.
- * Returns the closest ancestor directory that matches the packageDirectory patterns.
- */
-function findPackageDirectory(
-  filePath: string,
-  patterns: readonly string[],
-  projectDirectory?: string,
-): string {
-  let dir = path.dirname(filePath);
-  const root = path.parse(dir).root;
+	/**
+	 * The package directory of a file: its own directory, or with `packageDirectory` patterns,
+	 * the closest ancestor directory that is a package boundary.
+	 */
+	packageDirectoryOf(filePath: string): string {
+		const fileDir = path.dirname(filePath)
+		const patterns = this.#patterns
+		if (patterns === undefined) {
+			return fileDir
+		}
+		const cached = this.#packageDirCache.get(fileDir)
+		if (cached !== undefined) {
+			return cached
+		}
+		let result = fileDir
+		const { root } = path.parse(fileDir)
+		for (let dir = fileDir; dir !== root; dir = path.dirname(dir)) {
+			if (this.#isPackageDirectory(dir, patterns)) {
+				result = dir
+				break
+			}
+		}
+		this.#packageDirCache.set(fileDir, result)
+		return result
+	}
 
-  // Traverse up the directory tree
-  while (dir !== root) {
-    if (isPackageDirectory(dir, patterns, projectDirectory)) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      // Reached the root without finding a package directory
-      break;
-    }
-    dir = parent;
-  }
+	/**
+	 * Whether `importer` is in the same package as `exporter`, or in a descendant package.
+	 */
+	isInPackage(importer: string, exporter: string): boolean {
+		if (this.#options.indexLoophole) {
+			const match = indexFileRegExp.exec(exporter)
+			if (match) {
+				// `sub/index.ts` acts as `sub.ts`, so an index file can be the entry point of a sub package.
+				exporter = exporter.slice(0, -match[0].length)
+			}
+		}
 
-  // If no package directory found, return the root or the original directory
-  return path.dirname(filePath);
-}
+		const importerPackageDir = this.packageDirectoryOf(importer)
+		const exporterPackageDir = this.packageDirectoryOf(exporter)
+		if (importerPackageDir === exporterPackageDir) {
+			return true
+		}
 
-/**
- * Gets the package directory for a file based on configuration.
- * If packageDirectory patterns are specified, uses them to find the package boundary.
- * Otherwise, returns the file's directory.
- */
-function getPackageDirectory(
-  filePath: string,
-  packageOptions: PackageOptions,
-): string {
-  if (packageOptions.packageDirectory && packageOptions.packageDirectory.length > 0) {
-    return findPackageDirectory(
-      filePath,
-      packageOptions.packageDirectory,
-      packageOptions.projectDirectory,
-    );
-  }
-  return path.dirname(filePath);
-}
+		if (this.#options.filenameLoophole) {
+			// `foo.ts` may import from `foo/bar.ts`.
+			const rel = path.relative(path.dirname(importer), path.dirname(exporter))
+			if (rel === path.basename(importer, path.extname(importer))) {
+				return true
+			}
+		}
 
-/**
- * Checks whether importer is in the same 'package' as exporter.
- */
-export function isInPackage(
-  importer: string,
-  exporter: string,
-  packageOptions: PackageOptions,
-): boolean {
-  if (packageOptions.indexLoophole) {
-    const match = exporter.match(indexFileRegExp);
-    if (match) {
-      // import from `sub/index.ts` can be treated as `sub.ts` so that `index.ts` can be used as export point of a sub package.
-      exporter = exporter.slice(0, -match[0].length);
-    }
-  }
-
-  const importerPackageDir = getPackageDirectory(importer, packageOptions);
-  const exporterPackageDir = getPackageDirectory(exporter, packageOptions);
-
-  // Check if both files are in the same package directory
-  if (importerPackageDir === exporterPackageDir) {
-    return true;
-  }
-
-  // Check filenameLoophole: importing foo/bar.ts from foo.ts
-  if (packageOptions.filenameLoophole) {
-    const rel = path.relative(path.dirname(importer), path.dirname(exporter));
-    if (rel === path.basename(importer, path.extname(importer))) {
-      // Example: importing foo/bar.ts from foo.ts
-      return true;
-    }
-  }
-
-  // Check if importer's package is a descendant of exporter's package
-  // (i.e., exporter is in an ancestor package)
-  const rel = path.relative(exporterPackageDir, importerPackageDir);
-  // rel should not start with '..' (not going up) and should not be empty
-  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+		// The exporter's package is an ancestor of the importer's package.
+		const rel = path.relative(exporterPackageDir, importerPackageDir)
+		return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel)
+	}
 }

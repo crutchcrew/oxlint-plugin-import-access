@@ -4,70 +4,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `eslint-plugin-import-access`, an ESLint plugin that provides TypeScript package-private import restrictions via JSDoc `@package` annotations. The plugin prevents imports of package-private exports from outside their directory and includes a TypeScript Language Service Plugin for IDE integration.
+`@crutchcrew/oxlint-plugin-import-access` is an oxlint JS plugin (port of uhyo's `eslint-plugin-import-access`) with one rule, `import-access/jsdoc`: exports marked `@package` can only be imported from the same directory (package), `@private` exports never. It works **without a type checker**: imports are resolved with `oxc-resolver` and target files' exports and JSDoc are read with `oxc-parser`'s module record.
 
-## Development Commands
+## Commands
 
-### Building
+Package manager and script runner is bun; tests run on Node.js >= 22 (oxlint's `RuleTester` refuses Bun).
+
 ```bash
-npm run build          # Compile TypeScript to dist/
-npm run build:watch    # Watch mode compilation
-```
-
-### Testing
-```bash
-npm test               # Run all tests with type checking
-npm run test:watch     # Watch mode testing
-```
-
-### Linting
-```bash
-npm run lint           # ESLint check on src/**/*.ts
+bun install
+bun run test            # vitest: rule suites + unit tests
+bun run test:coverage   # same, enforces 100% lines/branches/functions/statements
+bun run build           # bun build (ESM bundle) + tsc declarations → dist/
+bun run test:e2e        # real oxlint CLI against dist/ (build first)
+bun run check           # oxfmt check, oxlint (dogfoods ./src/index.ts), typecheck, lockfile
+bun run bench [n]       # time oxlint on a generated project with n modules (build first)
 ```
 
 ## Architecture
 
-### Core Components
+- `src/index.ts` — plugin object `{ meta: { name: "import-access" }, rules: { jsdoc } }`.
+- `src/rules/jsdoc.ts` — rule meta/schema and `createOnce` visitors (`ImportSpecifier`, `ImportDefaultSpecifier`, `ExportSpecifier` with source). Process-wide `checker`; policies cached by options JSON + cwd.
+- `src/core/checkImportability.ts` — `ImportabilityChecker` (resolver, export tables, ambient modules, `findExport` emulating TS `getImmediateAliasedSymbol`) and `ImportabilityPolicy` (per options: excludes, self-reference, access, package boundaries).
+- `src/core/resolveModule.ts` — oxc-resolver wrapper; classifies internal / external (builtin or `node_modules`, `symlinks: false`) / unresolved (incl. non-module files like `.svg`).
+- `src/core/exportTable.ts` — export table from `parseSync(...).module.staticExports` + comments (never touches `.program`, except lazily for JSDoc inside variable statements); `ExportTableCache` re-validates by mtime/size per generation in long-running hosts.
+- `src/core/ambientModules.ts` — lazy index of `declare module "x"` / wildcard modules in `.d.ts` files under cwd.
+- `src/utils/jsdoc.ts` — TypeScript-compatible JSDoc attachment and tag parsing.
+- `src/utils/isInPackage.ts` — package boundaries, `indexLoophole`, `filenameLoophole`, `packageDirectory`.
 
-- **ESLint Rule**: `src/rules/jsdoc.ts` - Main ESLint rule implementation that checks import/export statements
-- **Symbol Checker**: `src/core/checkSymbolmportability.ts` - Core logic for determining if a symbol can be imported based on JSDoc annotations
-- **TypeScript Plugin**: `src/ts-plugin.ts` and `src/ts-server-plugin/` - Language service plugin for IDE integration
-- **Configuration**: 
-  - `src/flat-config.cts` - ESLint flat config export
-  - `src/flat-config.mts` - ESLint flat config export (MJS)
-  - `src/index.ts` - Main plugin export combining ESLint and TS server functionality
+## Tests
 
-### Key Utilities
+- `src/__tests__/rules/*.spec.ts` — fixture suites run through oxlint's `RuleTester` (`src/__tests__/harness.ts`, `eslintCompat: true` for 1-based columns). The 11 upstream suites were converted 1:1; `edge.spec.ts` expectations were generated from upstream's TypeScript-based rule.
+- Fixtures live in `src/__tests__/fixtures/project` (with workspace and third-party fixture packages in `fixtures/packages`). Fixture text is part of the expectations: oxfmt ignores it, and `bun run typecheck` checks it compiles.
+- Colocated unit tests: `src/**/*.spec.ts`. Coverage must stay at 100% without ignore comments.
+- `src/__tests__/e2e/` — CLI and packaging checks against `dist/`.
 
-- `src/utils/getAccessOfJsDocs.ts` - Extracts access level from JSDoc comments
-- `src/utils/isInPackage.ts` - Determines package relationships between files
-- `src/utils/findExportableDeclaration.ts` - Locates exportable declarations in TypeScript AST
+When changing semantics, compare against upstream: build upstream `eslint-plugin-import-access` (git history before the port) and lint the same fixtures with typed linting; results must match.
 
-### Configuration Options
+## Release
 
-The plugin supports several options via the JSDoc rule:
-- `indexLoophole`: Allow imports from `index.ts` in subdirectories (default: true)  
-- `filenameLoophole`: Allow imports from files with matching directory names (default: false)
-- `defaultImportability`: Default access level for exports ("public" | "package" | "private", default: "public")
-- `treatSelfReferenceAs`: Handle self-references as "internal" or "external" (default: "external")
-- `excludeSourcePatterns`: Glob patterns to exclude from checks (default: [])
-
-### Test Structure
-
-Tests are located in `src/__tests__/` with extensive fixture packages in `src/__tests__/fixtures/packages/` and `src/__tests__/fixtures/project/`. The test suite uses Vitest and includes both workspace and third-party package scenarios.
-
-**Important:** `src/__tests__/fixtures/eslint.ts` contains both `FlatESLintTester` and `LegacyESLintTester`. Do NOT remove the `LegacyESLintTester` — CI tests against ESLint 8, which only supports the legacy eslintrc config format. The `TEST_FLAT_CONFIG` env var controls which tester is used.
-
-### Build Outputs
-
-The plugin exports multiple entry points:
-- `dist/index.js` - Main plugin (CommonJS)
-- `dist/flat-config.cjs` / `dist/flat-config.mjs` - ESLint flat config formats
-- `dist/ts-plugin.js` - TypeScript server plugin
-
-### Development Notes
-
-- Uses TypeScript with strict mode and Node 16 module resolution
-- ESLint flat config for self-linting with the plugin's own jsdoc rule
-- Vitest for testing with 10s timeout for TypeScript compilation tests
-- Package includes workspace dependencies for testing scenarios
+Merging a `release/vX.Y.Z` PR (with the bumped `package.json` version) tags `vX.Y.Z` and runs `publish.yml`, which publishes to npm with provenance via trusted publishing and creates a GitHub release.

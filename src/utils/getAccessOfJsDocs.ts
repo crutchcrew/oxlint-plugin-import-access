@@ -1,44 +1,21 @@
-import { Tag } from "./getJSDocTags";
-
-export type JSDocAccess = "public" | "package" | "private";
+import type { Tag } from "./jsdoc.ts"
+import type { Importability } from "./options.ts"
 
 /**
- * Get access for given JSDoc.
+ * Access level declared by JSDoc tags: the first of `@package`, `@private`, `@public`
+ * or `@access <level>` wins, otherwise `defaultImportability`.
  */
 export function getAccessOfJsDocs(
-  tags: readonly Tag[],
-  defaultImportability: JSDocAccess,
-): JSDocAccess {
-  for (const tag of tags) {
-    const tagName = tag.name;
-    if (tagName === "package") {
-      // @package
-      return "package";
-    }
-    if (tagName === "private") {
-      // @private
-      return "private";
-    }
-    if (tagName === "public") {
-      // @public
-      return "public";
-    }
-    if (tagName === "access") {
-      // @access
-      const text = tag.text;
-      if (text === "package") {
-        // @access package
-        return "package";
-      }
-      if (text === "private") {
-        // @access private
-        return "private";
-      }
-      if (text === "public") {
-        // @access public
-        return "public";
-      }
-    }
-  }
-  return defaultImportability;
+	tags: readonly Tag[],
+	defaultImportability: Importability,
+): Importability {
+	for (const { name, text } of tags) {
+		if (name === "package" || name === "private" || name === "public") {
+			return name
+		}
+		if (name === "access" && (text === "package" || text === "private" || text === "public")) {
+			return text
+		}
+	}
+	return defaultImportability
 }

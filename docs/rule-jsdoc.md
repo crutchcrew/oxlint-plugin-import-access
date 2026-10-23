@@ -1,24 +1,30 @@
 # `import-access/jsdoc` rule
 
-_Note: this rules requires [typescript-eslint](https://github.com/typescript-eslint/typescript-eslint) settings with **type information enabled**. See typescript-eslint's docs on [how to enable type information](https://typescript-eslint.io/getting-started/typed-linting)._
-
-When this rule is enabled, `export` declaration can have a JSDoc `@package` annotation. Such exports can be imported only from files in the same ″package” (or sub packages). By default, all directory are considered to be a package.
+When this rule is enabled, `export` declarations can have a JSDoc `@package` annotation. Such exports can be imported only from files in the same "package" (or sub packages). By default, every directory is a package.
 
 As a bonus feature, importing exports annotated with `@private` is always forbidden.
 
-**Example settings in .eslintrc.js**:
+The rule needs no type information and no `tsconfig.json`: see [How exports are found](#how-exports-are-found).
 
-```js
-  "rules": {
-    "import-access/jsdoc": ["error", {
-      "indexLoophole": true,
-      "filenameLoophole": false,
-      "defaultImportability": "public", // "public" | "package" | "private"
-      "treatSelfReferenceAs": "external", // "internal" | "external"
-      "excludeSourcePatterns": ["generated/**/*"], // Array of glob patterns for source paths to exclude
-      "packageDirectory": ["**", "!**/_internal"] // Array of glob patterns for package boundaries
-    }],
-  }
+**Example settings in `.oxlintrc.json`**:
+
+```jsonc
+{
+	"jsPlugins": ["@crutchcrew/oxlint-plugin-import-access"],
+	"rules": {
+		"import-access/jsdoc": [
+			"error",
+			{
+				"indexLoophole": true,
+				"filenameLoophole": false,
+				"defaultImportability": "public", // "public" | "package" | "private"
+				"treatSelfReferenceAs": "external", // "internal" | "external"
+				"excludeSourcePatterns": ["generated/**/*"], // glob patterns of exporter files to skip
+				"packageDirectory": ["**", "!**/_internal"], // glob patterns of package boundaries
+			},
+		],
+	},
+}
 ```
 
 ## Example
@@ -29,16 +35,15 @@ As a bonus feature, importing exports annotated with `@private` is always forbid
 /**
  * @package
  */
-export const fooPackageVariable = "I am package-private export";
+export const fooPackageVariable = "I am package-private export"
 
 // ----- sub/bar.ts -----
 // This is correct because foo.ts is in the same directory
-import { fooPackageVariable } from "./foo";
-
+import { fooPackageVariable } from "./foo"
 // ----- baz.ts -----
 // This is INCORRECT because package-private exports
 // cannot be imported from outside the sub directory
-import { fooPackageVariable } from "./sub/foo";
+import { fooPackageVariable } from "./sub/foo"
 ```
 
 ## Options
@@ -47,13 +52,13 @@ The `import-access/jsdoc` rule has the following options. All options are option
 
 ```ts
 type JSDocRuleOptions = {
-  indexLoophole: boolean;
-  filenameLoophole: boolean;
-  defaultImportability: "public" | "package" | "private";
-  treatSelfReferenceAs: "internal" | "external";
-  excludeSourcePatterns?: string[];
-  packageDirectory?: string[];
-};
+	indexLoophole: boolean
+	filenameLoophole: boolean
+	defaultImportability: "public" | "package" | "private"
+	treatSelfReferenceAs: "internal" | "external"
+	excludeSourcePatterns?: string[]
+	packageDirectory?: string[]
+}
 ```
 
 ### `indexLoophole`
@@ -71,19 +76,19 @@ Enables the **index loophole** feature. When this option is enabled, `sub/index.
 /**
  * @package
  */
-export const subIndex = 3;
+export const subIndex = 3
 
 // ----- sub/foo.ts
 /**
  * @package
  */
-export const foo = 3;
+export const foo = 3
 
 // ----- main.ts
 // This is CORRECT under indexLoophole: true
-import { subIndex } from "./sub";
+import { subIndex } from "./sub"
 // This is still INCORRECT
-import { foo } from "./sub/foo";
+import { foo } from "./sub/foo"
 ```
 
 Note that the loophole is effective only for one level. That is, package-private exports from `index.ts` cannot be imported from files in the parent directory's parent directory.
@@ -94,15 +99,14 @@ Note that the loophole is effective only for one level. That is, package-private
 /**
  * @package
  */
-export const pika = "chu";
-
-// ----- sub/foo.ts
-// This is correct
-import { pika } from "./sub2/index";
+export const pika = "chu"
 
 // ----- bar.ts
 // This is still INCORRECT
-import { pika } from "./sub/sub2/index`;
+import { pika } from "./sub/sub2/index"
+// ----- sub/foo.ts
+// This is correct
+import { pika } from "./sub2/index"
 ```
 
 ### `filenameLoophole`
@@ -121,17 +125,16 @@ Enables the **filename loophole** feature. When this option is enabled, package-
 /**
  * @package
  */
-export const pika = "chu";
+export const pika = "chu"
 
 // ----- sub.ts
 // This is correct to import a package-private exports
 // from the directory named `sub`
-import { pika } from "./sub/foo";
-
+import { pika } from "./sub/foo"
 // ----- pika.ts
 // This is still INCORRECT because file name does not match
 // the directory name
-import { pika } from "./sub/foo";
+import { pika } from "./sub/foo"
 ```
 
 ### `defaultImportability`
@@ -150,15 +153,14 @@ You can override this default value by adding JSDoc annotation to the export. To
 // defaultImportability: "package"
 // ----- sub/bar.ts
 
-export const pika = "chu"; // no JSDoc, but automatically applied @package
+export const pika = "chu" // no JSDoc, but automatically applied @package
 
 // ----- sub/foo.ts
 // you can import
-import { pika } from "./bar";
-
+import { pika } from "./bar"
 // ----- bar2.ts
 // you cannot import because pika is @package
-import { pika } from "./sub/bar`;
+import { pika } from "./sub/bar"
 ```
 
 ### `treatSelfReferenceAs`
@@ -178,11 +180,11 @@ When this option is set to `internal`, self reference is treated as an internal 
 /**
  * @package
  */
-export const something = "something";
+export const something = "something"
 
 // ----- src/main.ts
 // This is CORRECT when treatSelfReferenceAs: external
-import { something } from "my-package/foo";
+import { something } from "my-package/foo"
 ```
 
 In the above example, `my-package/foo` is a self reference that connects to `src/somewhere/foo.ts`.
@@ -195,7 +197,7 @@ When `treatSelfReferenceAs: internal`, this import is disallowed because import 
 
 _Default value: `[]`_
 
-An array of glob patterns for source paths to exclude from the importability check. The patterns are resolved relative to the project root. When importing from a module that matches one of these patterns, the import-access/jsdoc rule will not apply any restrictions, regardless of the JSDoc annotations or defaultImportability setting.
+An array of glob patterns for source paths to exclude from the importability check. The patterns are resolved relative to the working directory oxlint runs in. When importing from a module that matches one of these patterns, the import-access/jsdoc rule will not apply any restrictions, regardless of the JSDoc annotations or defaultImportability setting.
 
 This is particularly useful for handling imports from auto-generated files that don't have proper JSDoc annotations.
 
@@ -206,38 +208,41 @@ The patterns use the [minimatch](https://github.com/isaacs/minimatch) library's 
 ```ts
 // Example: Match by file path
 // excludeSourcePatterns: ["src/types/**/*.d.ts"]
-import { typeDefinition } from "../types/api"; // Allowed if the implementation is in a .d.ts file in the src/types directory
+import { typeDefinition } from "../types/api" // Allowed if the implementation is in a .d.ts file in the src/types directory
 ```
 
 Additional examples:
 
 ```js
 // Match all files in a particular directory
-"src/generated/**";
+"src/generated/**"
 
 // Match multiple extensions
-"**/*.{generated,auto}.{ts,js}";
+"**/*.{generated,auto}.{ts,js}"
 
 // Match files with specific naming patterns
-"**/[a-z]*.auto.ts";
+"**/[a-z]*.auto.ts"
 
 // Match specific type definition files
-"src/**/*.d.ts";
+"src/**/*.d.ts"
 ```
 
 **Next.js specific configuration:**
 
 When working with Next.js projects, it's recommended to exclude the `.next` directory which contains auto-generated files:
 
-```js
-// In your .eslintrc.js
+```jsonc
+// In your .oxlintrc.json
 {
-  "rules": {
-    "import-access/jsdoc": ["error", {
-      // ... other options ...
-      "excludeSourcePatterns": [".next/**"]
-    }]
-  }
+	"rules": {
+		"import-access/jsdoc": [
+			"error",
+			{
+				// ... other options ...
+				"excludeSourcePatterns": [".next/**"],
+			},
+		],
+	},
 }
 ```
 
@@ -249,7 +254,7 @@ _Default value: `["**"]` (all directories are treated as package boundaries)_
 
 An array of glob patterns that specify which directories should be treated as package boundaries. By default, every directory creates a package boundary. This option allows you to customize which directories are considered package boundaries, which is useful for organizing internal implementation details in subdirectories without creating separate packages.
 
-The patterns use the [minimatch](https://github.com/isaacs/minimatch) library's glob syntax and are matched against relative paths from project root.
+The patterns use the [minimatch](https://github.com/isaacs/minimatch) library's glob syntax and are matched against the directory name and its path relative to the working directory.
 
 **Example 1: Excluding `_internal` directories**
 
@@ -275,7 +280,7 @@ import { internalHelper } from "./feature1/_internal/helpers";
 
 In this example:
 
-- `["**", "!**/_internal"]` means all directories are package boundaries expect those named `_internal`
+- `["**", "!**/_internal"]` means all directories are package boundaries except those named `_internal`
 - Files in `_internal/` are treated as belonging to the parent directory's package
 - `src/feature1/foo.ts` can import from `src/feature1/_internal/helpers.ts` because they're in the same package
 - `src/main.ts` cannot import from `src/feature1/_internal/helpers.ts` because `src/feature1` is a different package
@@ -323,3 +328,24 @@ In this example:
 // Exclude deeply nested patterns
 "packageDirectory": ["**", "!**/private/**"]
 ```
+
+## How exports are found
+
+The original ESLint rule asks the TypeScript type checker which declaration an import refers to. This port answers the same question without a type checker, which is what makes it fast:
+
+1. **Resolve** the module specifier like TypeScript does, with [oxc-resolver](https://github.com/oxc-project/oxc-resolver): `tsconfig.json` `paths` and project references, `package.json` `exports`/`types`, `.js` → `.ts` extension mapping, Node.js builtins.
+2. **Skip external modules.** Builtins and files reached through `node_modules` are never checked. Like in TypeScript, this includes workspace packages that are symlinked into `node_modules`.
+3. **Read the exporter's exports** with [oxc-parser](https://github.com/oxc-project/oxc/tree/main/napi/parser). Only the module record and comments are read; the syntax tree is not built. Files are parsed once and cached.
+4. **Find the export.** A direct export of the imported name is the answer, also when it re-exports something from another file (`export { a } from "./a"`): its JSDoc is what counts, exactly like upstream. `export * from` is followed.
+5. **Read the JSDoc** with TypeScript's rules: which comments attach to a declaration, how tags are parsed, and which tag wins.
+6. **Ambient modules.** `declare module "name" { … }` and wildcard declarations such as `declare module "*.svg"` in `.d.ts` files under the working directory are checked like files.
+
+Results match upstream on its whole test suite and on additional fixtures for re-exports, `export *` chains, overloads, enums, namespaces, `export =`, ambient and wildcard modules, and JSDoc placement.
+
+### Differences from upstream
+
+- **Symlinked workspace packages** are always external, even when your root `tsconfig.json` includes their sources. Upstream checks them in that case.
+- **Ambient module declarations** are only read from `.d.ts` files outside `node_modules` and hidden directories, and only from files that are not modules themselves. In the language server, restart it after adding new ambient declarations.
+- **Only the nearest `tsconfig.json`** is used for `paths`. Aliases defined in a differently named config file (such as `tsconfig.app.json`) that isn't referenced from `tsconfig.json` are not resolved.
+- **Declaration merging across files** (module augmentation) is not followed; the JSDoc of the declarations in the resolved file counts.
+- **Ambiguous `export *` names**, which TypeScript reports as an error, resolve to the first match.

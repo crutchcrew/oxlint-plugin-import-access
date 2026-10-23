@@ -1,340 +1,120 @@
-import { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import { Node, Program, Symbol, isStringLiteral } from "typescript";
-import { checkSymbolImportability } from "../core/checkSymbolmportability";
-import { PackageOptions } from "../utils/isInPackage";
+import { realpathSync } from "node:fs"
 
-type MessageId =
-  | "no-program"
-  | "package"
-  | "package:reexport"
-  | "private"
-  | "private:reexport";
+import type { Context, CreateOnceRule, ESTree } from "@oxlint/plugins"
 
-export type JSDocRuleOptions = {
-  /**
-   * Whether importing a package-private exports from `index.ts` in a subdirectory.
-   */
-  indexLoophole: boolean;
-  /**
-   * Whether importing a package-private exports in a directory from a file of same name.
-   */
-  filenameLoophole: boolean;
-  /**
-   * Whether packages importability is restricted to public exports only or not.
-   */
-  defaultImportability: "public" | "package" | "private";
-  /**
-   * Whether to treat self-reference as internal or external.
-   * When `external`, imports using the self-referencing feature of Node.js are
-   * treated as imports from external packages, meaning that they bypass
-   * the importability check.
-   */
-  treatSelfReferenceAs: "internal" | "external";
-  /**
-   * Array of glob patterns for source paths to exclude from the importability check.
-   * Useful for excluding generated files or auto-generated type definitions.
-   */
-  excludeSourcePatterns?: string[];
-  /**
-   * Array of glob patterns that specify which directories should be treated as package boundaries.
-   * By default, all directories are treated as package boundaries.
-   * Use negation patterns (e.g., "!**\/_internal") to exclude certain directories from being package boundaries.
-   * Example: ["**", "!**\/_internal"] treats all directories as packages except those named "_internal".
-   */
-  packageDirectory?: string[];
-};
+import { ImportabilityChecker, ImportabilityPolicy } from "../core/checkImportability.ts"
+import { type JSDocRuleOptions, normalizeOptions } from "../utils/options.ts"
 
-const jsdocRule: Omit<
-  TSESLint.RuleModule<MessageId, [Partial<JSDocRuleOptions>?]>,
-  "docs"
-> = {
-  meta: {
-    type: "problem",
-    docs: {
-      description: "Prohibit importing private exports.",
-      url: "TODO",
-    },
-    messages: {
-      "no-program":
-        "Type information is not available for this file. See https://typescript-eslint.io/getting-started/typed-linting/ for how to set this up.",
-      package: "Cannot import a package-private export '{{ identifier }}'",
-      "package:reexport":
-        "Cannot re-export a package-private export '{{ identifier }}'",
-      private: "Cannot import a private export '{{ identifier }}'",
-      "private:reexport":
-        "Cannot re-export a private export '{{ identifier }}'",
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          indexLoophole: {
-            type: "boolean",
-          },
-          filenameLoophole: {
-            type: "boolean",
-          },
-          defaultImportability: {
-            type: "string",
-            enum: ["public", "package", "private"],
-          },
-          treatSelfReferenceAs: {
-            type: "string",
-            enum: ["external", "internal"],
-          },
-          excludeSourcePatterns: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-          },
-          packageDirectory: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-  },
-  defaultOptions: [
-    {
-      indexLoophole: true,
-      filenameLoophole: false,
-      defaultImportability: "public",
-      treatSelfReferenceAs: "external",
-      excludeSourcePatterns: [],
-      packageDirectory: undefined,
-    },
-  ],
-  create(context) {
-    const { options, sourceCode } = context;
-    const { parserServices } = sourceCode;
-    if (!parserServices) {
-      return {};
-    }
-    const {
-      indexLoophole,
-      filenameLoophole,
-      defaultImportability,
-      treatSelfReferenceAs,
-      excludeSourcePatterns,
-      packageDirectory,
-    } = jsDocRuleDefaultOptions(options[0]);
+/**
+ * Process-wide caches shared by every file and every options object.
+ */
+export const checker: ImportabilityChecker = new ImportabilityChecker()
 
-    const packageOptions: PackageOptions = {
-      indexLoophole,
-      filenameLoophole,
-      defaultImportability,
-      treatSelfReferenceAs,
-      excludeSourcePatterns,
-      packageDirectory,
-      projectDirectory: parserServices.program?.getCurrentDirectory(),
-    };
+/** Policies by options and working directory (options may be a new object for every file). */
+const policies = new Map<string, ImportabilityPolicy>()
 
-    return {
-      ImportSpecifier(node) {
-        const sourceFilename = context.filename;
-        if (!sourceFilename) {
-          return;
-        }
-
-        if (parserServices.program == null) {
-          context.report({
-            node,
-            messageId: "no-program",
-          });
-          return;
-        }
-
-        const checker = parserServices.program.getTypeChecker();
-
-        if (parserServices.esTreeNodeToTSNodeMap == null) {
-          throw new Error(
-            "This rule requires the parser to provide the esTreeNodeToTSNodeMap in parserServices",
-          );
-        }
-
-        const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-
-        const symbol = checker.getSymbolAtLocation(tsNode.name);
-        if (symbol) {
-          const moduleSpecifier = tsNode.parent.parent.parent.moduleSpecifier;
-          if (!isStringLiteral(moduleSpecifier)) {
-            // Should not happen (as of TS 5.1)
-            return;
-          }
-
-          checkSymbol(
-            context,
-            packageOptions,
-            parserServices.program,
-            node,
-            tsNode,
-            moduleSpecifier.text,
-            symbol,
-          );
-        }
-      },
-      ImportDefaultSpecifier(node) {
-        const sourceFilename = context.filename;
-        if (!sourceFilename) {
-          return;
-        }
-
-        if (parserServices.program == null) {
-          context.report({
-            node,
-            messageId: "no-program",
-          });
-          return;
-        }
-
-        const checker = parserServices.program.getTypeChecker();
-
-        if (parserServices.esTreeNodeToTSNodeMap == null) {
-          throw new Error(
-            "This rule requires the parser to provide the esTreeNodeToTSNodeMap in parserServices",
-          );
-        }
-
-        const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-        if (!tsNode.name) {
-          return;
-        }
-        const symbol = checker.getSymbolAtLocation(tsNode.name);
-        if (symbol) {
-          const moduleSpecifier = tsNode.parent.moduleSpecifier;
-          if (!isStringLiteral(moduleSpecifier)) {
-            // Should not happen (as of TS 5.1)
-            return;
-          }
-
-          checkSymbol(
-            context,
-            packageOptions,
-            parserServices.program,
-            node,
-            tsNode,
-            moduleSpecifier.text,
-            symbol,
-          );
-        }
-      },
-      ExportSpecifier(node) {
-        const sourceFilename = context.filename;
-        if (!sourceFilename) {
-          return;
-        }
-
-        if (parserServices.program == null) {
-          context.report({
-            node,
-            messageId: "no-program",
-          });
-          return;
-        }
-
-        const checker = parserServices.program.getTypeChecker();
-
-        if (parserServices.esTreeNodeToTSNodeMap == null) {
-          throw new Error(
-            "This rule requires the parser to provide the esTreeNodeToTSNodeMap in parserServices",
-          );
-        }
-
-        const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-
-        const symbol = checker.getSymbolAtLocation(tsNode.name);
-        if (symbol) {
-          const moduleSpecifier = tsNode.parent.parent.moduleSpecifier;
-          if (!moduleSpecifier || !isStringLiteral(moduleSpecifier)) {
-            return;
-          }
-
-          checkSymbol(
-            context,
-            packageOptions,
-            parserServices.program,
-            node,
-            tsNode,
-            moduleSpecifier.text,
-            symbol,
-            true,
-          );
-        }
-      },
-    };
-  },
-};
-
-export default jsdocRule;
-
-export function jsDocRuleDefaultOptions(
-  options: Partial<JSDocRuleOptions> | undefined,
-): JSDocRuleOptions {
-  const {
-    indexLoophole = true,
-    filenameLoophole = false,
-    defaultImportability = "public",
-    treatSelfReferenceAs = "external",
-    excludeSourcePatterns = [],
-    packageDirectory = undefined,
-  } = options || {};
-  return {
-    indexLoophole,
-    filenameLoophole,
-    defaultImportability,
-    treatSelfReferenceAs,
-    excludeSourcePatterns,
-    packageDirectory,
-  };
+function policyFor(
+	options: Partial<JSDocRuleOptions> | undefined,
+	cwd: string,
+): ImportabilityPolicy {
+	const key = `${cwd}\0${JSON.stringify(options ?? {})}`
+	let policy = policies.get(key)
+	if (policy === undefined) {
+		policy = new ImportabilityPolicy(normalizeOptions(options, cwd))
+		policies.set(key, policy)
+	}
+	return policy
 }
 
-function checkSymbol(
-  context: Readonly<TSESLint.RuleContext<MessageId, unknown[]>>,
-  packageOptions: PackageOptions,
-  program: Program,
-  originalNode: TSESTree.Node,
-  tsNode: Node,
-  moduleSpecifier: string,
-  symbol: Symbol,
-  reexport = false,
-) {
-  const checker = program.getTypeChecker();
-  const exsy = checker.getImmediateAliasedSymbol(symbol);
-  if (!exsy) {
-    return;
-  }
-  const checkResult = checkSymbolImportability(
-    packageOptions,
-    program,
-    tsNode.getSourceFile().fileName,
-    moduleSpecifier,
-    exsy,
-  );
-  switch (checkResult) {
-    case "package": {
-      context.report({
-        node: originalNode,
-        messageId: reexport ? "package:reexport" : "package",
-        data: {
-          identifier: exsy.name,
-        },
-      });
-      break;
-    }
-    case "private": {
-      context.report({
-        node: originalNode,
-        messageId: reexport ? "private:reexport" : "private",
-        data: {
-          identifier: exsy.name,
-        },
-      });
-      break;
-    }
-  }
+function realFileName(fileName: string): string {
+	try {
+		return realpathSync.native(fileName)
+	} catch {
+		return fileName
+	}
 }
+
+function nameOf(
+	node: ESTree.IdentifierName | ESTree.IdentifierReference | ESTree.StringLiteral,
+): string {
+	return node.type === "Literal" ? node.value : node.name
+}
+
+type MessageId = "package" | "package:reexport" | "private" | "private:reexport"
+
+const rule: CreateOnceRule = {
+	meta: {
+		type: "problem",
+		docs: {
+			description: "Prohibit importing package-private and private exports.",
+			url: "https://github.com/crutchcrew/oxlint-plugin-import-access/blob/main/docs/rule-jsdoc.md",
+		},
+		messages: {
+			package: "Cannot import a package-private export '{{ identifier }}'",
+			"package:reexport": "Cannot re-export a package-private export '{{ identifier }}'",
+			private: "Cannot import a private export '{{ identifier }}'",
+			"private:reexport": "Cannot re-export a private export '{{ identifier }}'",
+		} satisfies Record<MessageId, string>,
+		schema: [
+			{
+				type: "object",
+				properties: {
+					indexLoophole: { type: "boolean" },
+					filenameLoophole: { type: "boolean" },
+					defaultImportability: { type: "string", enum: ["public", "package", "private"] },
+					treatSelfReferenceAs: { type: "string", enum: ["external", "internal"] },
+					excludeSourcePatterns: { type: "array", items: { type: "string" } },
+					packageDirectory: { type: "array", items: { type: "string" } },
+				},
+				additionalProperties: false,
+			},
+		],
+	},
+	createOnce(context: Context) {
+		let policy: ImportabilityPolicy
+		let importer: string
+
+		const check = (node: ESTree.Node, specifier: string, name: string, reexport: boolean) => {
+			const violation = policy.check(checker, importer, specifier, name)
+			if (violation !== undefined) {
+				context.report({
+					node,
+					messageId: reexport ? `${violation.access}:reexport` : violation.access,
+					data: { identifier: violation.identifier },
+				})
+			}
+		}
+
+		return {
+			before() {
+				// Without `from`, the file has no import or re-export to check.
+				if (!context.sourceCode.text.includes("from")) {
+					return false
+				}
+				policy = policyFor(context.options[0] as Partial<JSDocRuleOptions> | undefined, context.cwd)
+				importer = realFileName(context.filename)
+				checker.nextFile(importer)
+				return true
+			},
+			ImportSpecifier(node) {
+				check(
+					node,
+					(node.parent as ESTree.ImportDeclaration).source.value,
+					nameOf(node.imported),
+					false,
+				)
+			},
+			ImportDefaultSpecifier(node) {
+				check(node, (node.parent as ESTree.ImportDeclaration).source.value, "default", false)
+			},
+			ExportSpecifier(node) {
+				const { source } = node.parent as ESTree.ExportNamedDeclaration
+				if (source !== null) {
+					check(node, source.value, nameOf(node.local), true)
+				}
+			},
+		}
+	},
+}
+
+export default rule
