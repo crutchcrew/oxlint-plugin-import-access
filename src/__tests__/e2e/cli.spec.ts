@@ -90,12 +90,14 @@ describe("oxlint CLI with the built plugin", () => {
 
 describe("published package", () => {
 	it("contains the bundle, types and docs only", () => {
-		const [pack] = JSON.parse(
-			execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
-				cwd: repoRoot,
-				encoding: "utf8",
-			}),
-		) as [{ files: { path: string }[] }]
+		const output = execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+			cwd: repoRoot,
+			encoding: "utf8",
+		})
+		// npm 10 still runs `prepare` here and lets its output through before the JSON.
+		const [pack] = JSON.parse(output.slice(output.search(/^\[/m))) as [
+			{ files: { path: string }[] },
+		]
 		const files = pack.files.map((file) => file.path).toSorted()
 		expect(files).toContain("dist/index.js")
 		expect(files).toContain("dist/index.d.ts")
