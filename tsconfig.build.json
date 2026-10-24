@@ -1,0 +1,14 @@
+{
+	"$schema": "https://www.schemastore.org/tsconfig",
+	"extends": "./tsconfig.json",
+	"include": ["src"],
+	"exclude": ["src/__tests__", "src/**/*.spec.ts"],
+	"compilerOptions": {
+		"noEmit": false,
+		"declaration": true,
+		"isolatedDeclarations": true,
+		"emitDeclarationOnly": true,
+		"outDir": "dist",
+		"rootDir": "src"
+	}
+}
