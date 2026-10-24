@@ -16,7 +16,7 @@ bun run test            # vitest: rule suites + unit tests
 bun run test:coverage   # same, enforces 100% lines/branches/functions/statements
 bun run build           # bun build (ESM bundle) + tsc declarations → dist/
 bun run test:e2e        # real oxlint CLI against dist/ (build first)
-bun run lint            # oxlint with type checking (dogfoods ./src/index.ts), then type-checks fixtures
+bun run lint            # oxlint with type checking (dogfoods ./src/index.ts); fixtures are only type-checked
 bun run check           # oxfmt check, lint, lockfile
 bun run bench [n]       # time oxlint on a generated project with n modules (build first)
 ```
@@ -35,7 +35,7 @@ bun run bench [n]       # time oxlint on a generated project with n modules (bui
 ## Tests
 
 - `src/__tests__/rules/*.spec.ts` — fixture suites run through oxlint's `RuleTester` (`src/__tests__/harness.ts`, `eslintCompat: true` for 1-based columns). The 11 upstream suites were converted 1:1; `edge.spec.ts` expectations were generated from upstream's TypeScript-based rule.
-- Fixtures live in `src/__tests__/fixtures/project` (with workspace and third-party fixture packages in `fixtures/packages`). Fixture text is part of the expectations: oxfmt ignores it, and `bun run lint` type-checks it (`oxlint.fixtures.config.ts`).
+- Fixtures live in `src/__tests__/fixtures/project` (with workspace and third-party fixture packages in `fixtures/packages`). Fixture text is part of the expectations: oxfmt ignores it, and `bun run lint` only type-checks it (an `oxlint.config.ts` override turns off the rules it breaks on purpose).
 - Colocated unit tests: `src/**/*.spec.ts`. Coverage must stay at 100% without ignore comments.
 - `src/__tests__/e2e/` — CLI and packaging checks against `dist/`.
 

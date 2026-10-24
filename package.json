@@ -44,7 +44,7 @@
 		"check": "bun run --parallel fmt:check lint lockfile:check",
 		"fmt": "oxfmt --write .",
 		"fmt:check": "oxfmt --check .",
-		"lint": "oxlint && oxlint -c oxlint.fixtures.config.ts src/__tests__/fixtures/project",
+		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"lockfile:check": "bun install --frozen-lockfile",
 		"prebuild": "rm -rf dist",
