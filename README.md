@@ -5,7 +5,7 @@
 [![provenance](https://img.shields.io/badge/provenance-verified-brightgreen)](https://www.npmjs.com/package/@crutchcrew/oxlint-plugin-import-access)
 [![license](https://img.shields.io/npm/l/@crutchcrew/oxlint-plugin-import-access)](./LICENSE)
 
-Package-private exports for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Mark an export `@package` and only files in the same directory can import it.
+Package-private exports for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Exports are `@public` by default; tag one `@package` to keep it inside its directory, or `@private` so it can't be imported at all.
 
 A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.com/uhyo/eslint-plugin-import-access) that needs **no type checker**: no `typescript` dependency, no `tsconfig.json` project loading, no typed linting setup.
 
