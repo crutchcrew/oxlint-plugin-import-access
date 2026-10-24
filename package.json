@@ -48,6 +48,9 @@
 		"test:coverage": "vitest run --coverage",
 		"typecheck": "tsc --noEmit && tsc --noEmit -p src/__tests__/fixtures/project/tsconfig.json"
 	},
+	"dependencies": {
+		"minimatch": "^10.2.6"
+	},
 	"devDependencies": {
 		"@fixture-package-third-party/has-sub-module": "file:src/__tests__/fixtures/packages/third-party/has-sub-module",
 		"@fixture-package-third-party/missing-entrypoint": "file:src/__tests__/fixtures/packages/third-party/missing-entrypoint",
