@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`@crutchcrew/oxlint-plugin-import-access` is an oxlint JS plugin (port of uhyo's `eslint-plugin-import-access`) with one rule, `import-access/jsdoc`: exports marked `@package` can only be imported from the same directory (package), `@private` exports never. It works **without a type checker**: imports are resolved with `oxc-resolver` and target files' exports and JSDoc are read with `oxc-parser`'s module record.
+`@crutchcrew/oxlint-plugin-import-access` is an oxlint JS plugin (port of uhyo's `eslint-plugin-import-access`) with one rule, `import-access/jsdoc`. Exports are `@public` by default (`defaultImportability: "public"`). Only exports tagged `@package` or `@private` (or all untagged ones, if `defaultImportability` is changed) are restricted: `@package` exports can be imported from their own package (the directory and its subdirectories; with the default `indexLoophole`, `sub/index.ts` also counts as `sub.ts`), `@private` exports never. It works **without a type checker**: imports are resolved with `oxc-resolver` and target files' exports and JSDoc are read with `oxc-parser`'s module record.
 
 ## Commands
 
