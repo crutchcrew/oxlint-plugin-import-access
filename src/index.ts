@@ -2,6 +2,7 @@ import type { Plugin } from "@oxlint/plugins"
 
 import jsdoc from "./rules/jsdoc.ts"
 
+/** @public */
 export type { Importability, JSDocRuleOptions } from "./utils/options.ts"
 
 /**

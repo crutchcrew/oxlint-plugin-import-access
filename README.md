@@ -38,7 +38,7 @@ This plugin turns that around: an export stays `@private` until you tag it. Tag 
 | **Checks unsaved edits in the editor** | ✅           | ✅                                                                                 | ❌ skipped until saved                                                                   |
 | **Same results as the original rule**  | ✅ verified¹ | –                                                                                  | ✅                                                                                       |
 
-¹ With `defaultImportability: "public"`, the original's default: here, exports without an access tag are `@private` by default.
+¹ With `defaultImportability: "public"`, which makes exports without an access tag `@public` like in the original. This plugin's default is `"private"`.
 
 ## Install
 
