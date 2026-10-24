@@ -32,32 +32,32 @@ Also, you can enable the TypeScript Language Service Plugin by adding it to the 
 In **eslint.config.js**:
 
 ```js
-import typescriptEslintParser from "@typescript-eslint/parser";
-import importAccess from "eslint-plugin-import-access/flat-config";
+import typescriptEslintParser from "@typescript-eslint/parser"
+import importAccess from "eslint-plugin-import-access/flat-config"
 
 export default [
-  // other settings...
-  {
-    // set up typescript-eslint
-    languageOptions: {
-      parser: typescriptEslintParser,
-      parserOptions: {
-        project: true,
-        sourceType: "module",
-      },
-    },
-  },
-  {
-    plugins: {
-      "import-access": importAccess,
-    },
-  },
-  {
-    rules: {
-      "import-access/jsdoc": ["error"],
-    },
-  },
-];
+	// other settings...
+	{
+		// set up typescript-eslint
+		languageOptions: {
+			parser: typescriptEslintParser,
+			parserOptions: {
+				project: true,
+				sourceType: "module",
+			},
+		},
+	},
+	{
+		plugins: {
+			"import-access": importAccess,
+		},
+	},
+	{
+		rules: {
+			"import-access/jsdoc": ["error"],
+		},
+	},
+]
 ```
 
 _Note: currently you need to import the plugin from the `/flat-config` subpath. In a future version, this will be simplified._
@@ -88,15 +88,15 @@ In **tsconfig.json**:
 
 ```json
 {
-  "compilerOptions": {
-    // ...
-    "plugins": [
-      // ...
-      {
-        "name": "eslint-plugin-import-access"
-      }
-    ]
-  }
+	"compilerOptions": {
+		// ...
+		"plugins": [
+			// ...
+			{
+				"name": "eslint-plugin-import-access"
+			}
+		]
+	}
 }
 ```
 
@@ -110,16 +110,15 @@ _Note: to enable TypeScript language service plugins installed locally, you must
 /**
  * @package
  */
-export const fooPackageVariable = "I am package-private export";
+export const fooPackageVariable = "I am package-private export"
 
 // ----- sub/bar.ts -----
 // This is correct because foo.ts is in the same directory
-import { fooPackageVariable } from "./foo";
-
+import { fooPackageVariable } from "./foo"
 // ----- baz.ts -----
 // This is INCORRECT because package-private exports
 // cannot be imported from outside the sub directory
-import { fooPackageVariable } from "./sub/foo";
+import { fooPackageVariable } from "./sub/foo"
 ```
 
 ## Rule References

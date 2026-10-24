@@ -1,3 +1,3 @@
-import * as tsLintUtils from "@typescript-eslint/utils";
+import * as thirdParty from "@fixture-package-third-party/has-sub-module";
 
-console.log(tsLintUtils);
+console.log(thirdParty);
