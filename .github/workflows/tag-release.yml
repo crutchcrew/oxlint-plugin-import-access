@@ -19,11 +19,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Create release tag and trigger publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v$(node -p "require('./package.json').version")"
+          TAG="v$(bun -p "require('./package.json').version")"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "::error::Tag $TAG already exists. Bump the version in package.json before merging the release branch."
             exit 1

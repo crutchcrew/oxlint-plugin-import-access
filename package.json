@@ -37,7 +37,7 @@
 		"./package.json": "./package.json"
 	},
 	"scripts": {
-		"bench": "node bench/run.ts",
+		"bench": "bun bench/run.ts",
 		"build": "bun run --parallel build:compile build:declaration",
 		"build:compile": "bun build src/index.ts --outdir dist --format esm --target node --packages external",
 		"build:declaration": "tsc -p tsconfig.build.json && bun scripts/fix-dts-extensions.ts",
@@ -81,11 +81,21 @@
 		"oxlint": ">=1.40.0"
 	},
 	"devEngines": {
-		"runtime": {
-			"name": "node",
-			"version": ">=22.18.0",
+		"packageManager": {
+			"name": "bun",
 			"onFail": "warn"
-		}
+		},
+		"runtime": [
+			{
+				"name": "bun",
+				"onFail": "warn"
+			},
+			{
+				"name": "node",
+				"version": ">=22.18.0",
+				"onFail": "warn"
+			}
+		]
 	},
 	"engines": {
 		"node": "^20.19.0 || >=22.12.0"
