@@ -16,6 +16,14 @@ export default defineConfig({
 		"unicorn/no-null": "off",
 		"typescript/no-unsafe-type-assertion": "off",
 	},
+	overrides: [
+		{
+			// oxc-parser types its string-valued kinds as `const enum`s, which can't be referenced at
+			// runtime under `verbatimModuleSyntax`; comparing with the string values is intended.
+			files: ["src/core/exportTable.ts"],
+			rules: { "typescript/no-unsafe-enum-comparison": "off" },
+		},
+	],
 	ignorePatterns: ["dist", "node_modules", "coverage", "src/__tests__/fixtures"],
 	options: {
 		typeAware: true,

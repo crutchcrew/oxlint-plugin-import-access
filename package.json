@@ -49,7 +49,9 @@
 		"typecheck": "tsc --noEmit && tsc --noEmit -p src/__tests__/fixtures/project/tsconfig.json"
 	},
 	"dependencies": {
-		"minimatch": "^10.2.6"
+		"minimatch": "^10.2.6",
+		"oxc-parser": "^0.155.0",
+		"oxc-resolver": "^11.24.2"
 	},
 	"devDependencies": {
 		"@fixture-package-third-party/has-sub-module": "file:src/__tests__/fixtures/packages/third-party/has-sub-module",
