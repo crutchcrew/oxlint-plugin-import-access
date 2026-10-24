@@ -30,11 +30,8 @@ jobs:
       - name: Format
         run: bun run fmt:check
 
-      - name: Lint
+      - name: Lint and typecheck
         run: bun run lint
-
-      - name: Typecheck
-        run: bun run typecheck
 
       - name: Test
         run: bun run test:coverage

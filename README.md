@@ -150,7 +150,7 @@ In a long-running editor session, files are re-checked as they change: exporter 
 bun install
 bun run test          # rule and unit tests (Node.js >= 22)
 bun run build && bun run test:e2e
-bun run check         # format, lint (with this plugin on its own sources), typecheck, lockfile
+bun run check         # format, lint + typecheck (oxlint, with this plugin on its own sources), lockfile
 ```
 
 ## Credits
