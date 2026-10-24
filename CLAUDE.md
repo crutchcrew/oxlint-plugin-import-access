@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Package manager and script runner is bun; tests run on Node.js >= 22 (oxlint's `RuleTester` refuses Bun).
+Use bun for everything (package manager, scripts, CI one-liners) except where oxlint loads the plugin, which runs on Node.js: the tests (oxlint's `RuleTester` refuses Bun), `bun run lint` (dogfoods `./src/index.ts`, needs Node.js >= 22.18 for type stripping) and the e2e suite. Publishing uses `npm publish --provenance`.
 
 ```bash
 bun install
