@@ -17,7 +17,7 @@ export default defineConfig({
 		"unicorn/no-null": "off",
 		"typescript/no-unsafe-type-assertion": "off",
 		// Dogfood: this plugin checks its own sources.
-		"import-access/jsdoc": ["error", { defaultImportability: "public" }],
+		"import-access/jsdoc": "error",
 	},
 	overrides: [
 		{
