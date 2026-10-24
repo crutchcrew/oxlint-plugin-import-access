@@ -2,6 +2,7 @@ import { defineConfig } from "oxlint"
 
 export default defineConfig({
 	plugins: ["unicorn", "typescript", "oxc", "import"],
+	jsPlugins: [{ name: "import-access", specifier: "./src/index.ts" }],
 	categories: {
 		correctness: "error",
 		suspicious: "warn",
@@ -15,6 +16,8 @@ export default defineConfig({
 		"prefer-const": "warn",
 		"unicorn/no-null": "off",
 		"typescript/no-unsafe-type-assertion": "off",
+		// Dogfood: this plugin checks its own sources.
+		"import-access/jsdoc": ["error", { defaultImportability: "public" }],
 	},
 	overrides: [
 		{
