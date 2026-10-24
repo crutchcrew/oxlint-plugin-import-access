@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  # Any base branch, so stacked pull requests are checked too.
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@v1
+
+      # Tests use oxlint's RuleTester (Node.js >= 22) and lint loads the plugin from TypeScript sources.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install
+
+      - name: Lockfile drift
+        run: bun lockfile:check
+
+      - name: Format
+        run: bun run fmt:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun run test:coverage
+
+      - name: Build
+        run: bun run build
+
+      - name: End-to-end
+        run: bun run test:e2e
+
+      - name: Generate badges
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p .badges
+
+          COVERAGE=$(node -p "require('./coverage/coverage-summary.json').total.branches.pct")
+          if [ "$(node -p "$COVERAGE >= 90")" = "true" ]; then COLOR="brightgreen"
+          elif [ "$(node -p "$COVERAGE >= 70")" = "true" ]; then COLOR="yellow"
+          else COLOR="red"; fi
+          echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${COVERAGE}%\",\"color\":\"${COLOR}\"}" > .badges/coverage.json
+
+          SIZE_LABEL=$(node -p "(require('zlib').gzipSync(require('fs').readFileSync('dist/index.js')).length / 1024).toFixed(1) + ' kB'")
+          echo "{\"schemaVersion\":1,\"label\":\"gzip size\",\"message\":\"${SIZE_LABEL}\",\"color\":\"blue\"}" > .badges/size.json
+
+      - name: Deploy badges
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .badges
+          destination_dir: badges
+          keep_files: true
+
+  # The published plugin supports the same Node.js versions as oxlint.
+  node-compat:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: useblacksmith/checkout@v1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: End-to-end
+        run: bun run test:e2e
+
+  # The oldest oxlint version in `peerDependencies`.
+  oxlint-min:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@v1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Install oldest supported oxlint
+        run: |
+          MIN_VERSION=$(node -p "require('./package.json').peerDependencies.oxlint.replace('>=', '')")
+          npm install --prefix "$RUNNER_TEMP/oxlint-min" --no-save "oxlint@$MIN_VERSION"
+
+      - name: End-to-end
+        run: bun run test:e2e
+        env:
+          OXLINT_BIN: ${{ runner.temp }}/oxlint-min/node_modules/.bin/oxlint
