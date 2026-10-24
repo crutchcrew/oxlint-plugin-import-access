@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`@crutchcrew/oxlint-plugin-import-access` is an oxlint JS plugin (port of uhyo's `eslint-plugin-import-access`) with one rule, `import-access/jsdoc`. Exports are `@public` by default (`defaultImportability: "public"`). Only exports tagged `@package` or `@private` (or all untagged ones, if `defaultImportability` is changed) are restricted: `@package` exports can be imported from their own package (the directory and its subdirectories; with the default `indexLoophole`, `sub/index.ts` also counts as `sub.ts`), `@private` exports never. It works **without a type checker**: imports are resolved with `oxc-resolver` and target files' exports and JSDoc are read with `oxc-parser`'s module record.
+`@crutchcrew/oxlint-plugin-import-access` is an oxlint JS plugin (port of uhyo's `eslint-plugin-import-access`) with one rule, `import-access/jsdoc`. Only `@public` exports can be imported from anywhere; exports without an access tag are `@private` (`defaultImportability: "private"`, unlike upstream's `"public"`). `@package` exports can be imported from their own package (the directory and its subdirectories; with the default `indexLoophole`, `sub/index.ts` also counts as `sub.ts`), `@private` exports never. The plugin's own sources are linted with the default options, so every export in `src/` carries `@package` or `@public`. It works **without a type checker**: imports are resolved with `oxc-resolver` and target files' exports and JSDoc are read with `oxc-parser`'s module record.
 
 ## Commands
 
@@ -34,7 +34,7 @@ bun run bench [n]       # time oxlint on a generated project with n modules (bui
 
 ## Tests
 
-- `src/__tests__/rules/*.spec.ts` — fixture suites run through oxlint's `RuleTester` (`src/__tests__/harness.ts`, `eslintCompat: true` for 1-based columns). The 11 upstream suites were converted 1:1; `edge.spec.ts` expectations were generated from upstream's TypeScript-based rule.
+- `src/__tests__/rules/*.spec.ts` — fixture suites run through oxlint's `RuleTester` (`src/__tests__/harness.ts`, `eslintCompat: true` for 1-based columns). The 11 upstream suites were converted 1:1; `edge.spec.ts` expectations were generated from upstream's TypeScript-based rule. `testFixtures` applies upstream's `defaultImportability: "public"` under each case's options; `defaults.spec.ts` passes `{}` to test this plugin's own defaults.
 - Fixtures live in `src/__tests__/fixtures/project` (with workspace and third-party fixture packages in `fixtures/packages`). Fixture text is part of the expectations: oxfmt ignores it, and `bun run lint` only type-checks it (an `oxlint.config.ts` override turns off the rules it breaks on purpose).
 - Colocated unit tests: `src/**/*.spec.ts`. Coverage must stay at 100% without ignore comments.
 - `src/__tests__/e2e/` — CLI and packaging checks against `dist/`.

@@ -11,6 +11,7 @@ import { ResolverFactory } from "oxc-resolver"
  *   (TypeScript's "external library import", which includes symlinked workspace packages).
  * - `unresolved`: nothing found, or a file that is no module to TypeScript (`.svg`, `.css`…);
  *   a wildcard ambient module (`declare module "*.svg"`) may still declare it.
+ * @package
  */
 export type Resolution =
 	| { readonly kind: "internal"; readonly fileName: string }
@@ -35,6 +36,7 @@ const directorySpecifier = /(?:^|[/\\])\.{0,2}$/
  *
  * Results are memoized per importing directory, and relative specifiers also by the absolute
  * path they point at, so every importer of a module shares one resolution.
+ * @package
  */
 export class ModuleResolver {
 	readonly #resolver = new ResolverFactory({

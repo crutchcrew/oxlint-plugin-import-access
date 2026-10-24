@@ -2,9 +2,11 @@
 
 This rule checks every import against the JSDoc access tag of the imported export:
 
-- `@public` exports can be imported from anywhere. An export without an access tag is `@public` (see [`defaultImportability`](#defaultimportability)).
+- `@public` exports can be imported from anywhere.
 - `@package` exports can be imported only from files in the same "package" (or sub packages). By default, every directory is a package.
-- `@private` exports can't be imported at all.
+- `@private` exports can't be imported at all. An export without an access tag is `@private` (see [`defaultImportability`](#defaultimportability)).
+
+![sub/foo.ts exports api tagged @public, helper tagged @package and secret without a tag. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.](./images/access.svg)
 
 `@access public`, `@access package` and `@access private` work the same as the short tags.
 
@@ -21,7 +23,7 @@ The rule needs no type information and no `tsconfig.json`: see [How exports are 
 			{
 				"indexLoophole": true,
 				"filenameLoophole": false,
-				"defaultImportability": "public", // "public" | "package" | "private"
+				"defaultImportability": "private", // "private" | "package" | "public"
 				"treatSelfReferenceAs": "external", // "internal" | "external"
 				"excludeSourcePatterns": ["generated/**/*"], // glob patterns of exporter files to skip
 				"packageDirectory": ["**", "!**/_internal"], // glob patterns of package boundaries
@@ -37,16 +39,23 @@ The rule needs no type information and no `tsconfig.json`: see [How exports are 
 // ----- sub/foo.ts -----
 
 /**
+ * @public
+ */
+export const fooPublicVariable = "I am public export"
+
+/**
  * @package
  */
 export const fooPackageVariable = "I am package-private export"
 
-// No access tag, so this export is @public
-export const fooPublicVariable = "I am public export"
+// No access tag, so this export is @private
+export const fooPrivateVariable = "I am private export"
 
 // ----- sub/bar.ts -----
 // This is correct because foo.ts is in the same directory
 import { fooPackageVariable } from "./foo"
+// This is INCORRECT because private exports cannot be imported at all
+import { fooPrivateVariable } from "./foo"
 // ----- baz.ts -----
 // This is correct because @public exports can be imported from anywhere
 import { fooPublicVariable } from "./sub/foo"
@@ -148,11 +157,11 @@ import { pika } from "./sub/foo"
 
 ### `defaultImportability`
 
-_Default value: `public`_
+_Default value: `private`_
 
-Sets the access of exports without an access tag, for the entire project. With the default `public`, they are treated as `@public` and can be imported from anywhere; only exports tagged `@package` or `@private` are restricted.
+Sets the access of exports without an access tag, for the entire project. With the default `private`, they are treated as `@private` and can't be imported at all: only exports tagged `@public` can be imported from anywhere, and exports tagged `@package` from their own package.
 
-Set it to `package` to treat every untagged export as `@package`, or to `private` to treat every untagged export as `@private`. Then only exports tagged `@public` can be imported from anywhere.
+Set it to `package` to treat every untagged export as `@package`, or to `public` to treat every untagged export as `@public`, which is the original plugin's default.
 
 An access tag on an export always overrides this default.
 
@@ -360,6 +369,7 @@ Results match upstream on its whole test suite and on additional fixtures for re
 
 ### Differences from upstream
 
+- **Default access**: exports without an access tag are `@private` (`defaultImportability: "private"`); upstream treats them as `@public`. Set `defaultImportability: "public"` for upstream's behavior.
 - **Symlinked workspace packages** are always external, even when your root `tsconfig.json` includes their sources. Upstream checks them in that case.
 - **Ambient module declarations** are only read from `.d.ts` files outside `node_modules` and hidden directories, and only from files that are not modules themselves. In the language server, restart it after adding new ambient declarations.
 - **Only the nearest `tsconfig.json`** is used for `paths`. Aliases defined in a differently named config file (such as `tsconfig.app.json`) that isn't referenced from `tsconfig.json` are not resolved.

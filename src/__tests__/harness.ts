@@ -12,9 +12,13 @@ RuleTester.describe = describe
 RuleTester.it = it
 RuleTester.itOnly = it.only
 
-/** Root of the fixture project; also the linter's working directory. */
+/**
+ * Root of the fixture project; also the linter's working directory.
+ * @package
+ */
 export const projectRoot: string = path.resolve(import.meta.dirname, "fixtures/project")
 
+/** @package */
 export type ExpectedError = {
 	readonly messageId: "package" | "package:reexport" | "private" | "private:reexport"
 	readonly data: { readonly identifier: string }
@@ -24,6 +28,7 @@ export type ExpectedError = {
 	readonly endColumn: number
 }
 
+/** @package */
 export type FixtureCase = {
 	readonly name: string
 	/** Path of the file to lint, relative to `projectRoot`. */
@@ -34,11 +39,25 @@ export type FixtureCase = {
 }
 
 /**
+ * Defaults of upstream's rule, where exports without an access tag are public.
+ * The suites converted from upstream expect them.
+ * @package
+ */
+export const upstreamDefaults: Partial<JSDocRuleOptions> = { defaultImportability: "public" }
+
+/**
  * Lint fixture files with the real oxlint `RuleTester` and compare the diagnostics.
  *
+ * Each case's options are applied over `baseOptions`; pass `{}` to test this rule's own defaults.
+ *
  * `eslintCompat` keeps ESLint's 1-based columns, so expectations match upstream's snapshots.
+ * @package
  */
-export function testFixtures(suite: string, cases: readonly FixtureCase[]): void {
+export function testFixtures(
+	suite: string,
+	cases: readonly FixtureCase[],
+	baseOptions: Partial<JSDocRuleOptions> = upstreamDefaults,
+): void {
 	const toTestCase = ({ name, file, options }: FixtureCase) => {
 		const filename = path.join(projectRoot, file)
 		return {
@@ -46,7 +65,7 @@ export function testFixtures(suite: string, cases: readonly FixtureCase[]): void
 			filename,
 			code: readFileSync(filename, "utf8"),
 			// RuleTester wants mutable JSON; the options are only read.
-			options: options === undefined ? [] : [options as Record<string, never>],
+			options: [{ ...baseOptions, ...options } as Record<string, never>],
 		}
 	}
 	const valid = cases.filter((c) => !c.errors?.length).map(toTestCase)

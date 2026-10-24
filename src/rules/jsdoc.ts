@@ -7,6 +7,7 @@ import { type JSDocRuleOptions, normalizeOptions } from "../utils/options.ts"
 
 /**
  * Process-wide caches shared by every file and every options object.
+ * @package
  */
 export const checker: ImportabilityChecker = new ImportabilityChecker()
 
@@ -117,4 +118,5 @@ const rule: CreateOnceRule = {
 	},
 }
 
+/** @public */
 export default rule

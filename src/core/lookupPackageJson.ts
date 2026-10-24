@@ -29,6 +29,7 @@ function readPackageName(packageJsonPath: string): string | null | undefined {
 
 /**
  * Name of the closest `package.json` above `file`, or `null`.
+ * @package
  */
 export function lookupPackageName(file: string): string | null {
 	const visited: string[] = []
@@ -55,6 +56,7 @@ export function lookupPackageName(file: string): string | null {
 
 /**
  * Forget cached package.json lookups (for long-running processes and tests).
+ * @package
  */
 export function clearPackageNameCache(): void {
 	packageNameCache.clear()

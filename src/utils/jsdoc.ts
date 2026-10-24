@@ -1,5 +1,6 @@
 /**
  * A JSDoc tag such as `@package` or `@access package`.
+ * @public
  */
 export type Tag = {
 	readonly name: string
@@ -9,6 +10,7 @@ export type Tag = {
 /**
  * Minimal comment shape shared by oxc-parser and oxlint's `sourceCode`.
  * `value` excludes the `/*` and `*\/` delimiters.
+ * @public
  */
 export type Comment = {
 	readonly type: "Line" | "Block"
@@ -66,6 +68,7 @@ function lastCommentEndingBefore(comments: readonly Comment[], pos: number): num
  * - they must sit in the trivia between the previous token and the node,
  * - for statements, comments on the same line as the previous token belong to that token
  *   (`includeSameLine: false`); export specifiers and variable declarators take them too.
+ * @package
  */
 export function findJsDocComments(
 	sourceText: string,
@@ -118,6 +121,7 @@ const tagNamePart = /[-\p{ID_Continue}$\u200c\u200d]/u
  *
  * A tag starts with `@` followed by its name, at the beginning of a line (after the optional `*`
  * margin) or after a space or tab, but not inside backticks. Its text runs until the next tag.
+ * @package
  */
 export function parseJsDocTags(comment: Comment): Tag[] {
 	// `value` of `/** ... */` starts with the second `*` of the opening delimiter.
@@ -185,12 +189,14 @@ export function parseJsDocTags(comment: Comment): Tag[] {
 /**
  * Tags as TypeScript reports them for a node: `symbol.getJsDocTags()` only sees the last JSDoc block
  * (`own`), while the declaration's `jsDoc` holds every block (`all`).
+ * @public
  */
 export type NodeTags = {
 	readonly own: readonly Tag[]
 	readonly all: readonly Tag[]
 }
 
+/** @public */
 export function jsDocTagsAt(
 	sourceText: string,
 	comments: readonly Comment[],

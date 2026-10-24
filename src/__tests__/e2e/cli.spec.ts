@@ -65,9 +65,11 @@ describe("oxlint CLI with the built plugin", () => {
 			.toMatchInlineSnapshot(`
 			[
 			  "src/default-export/foo.ts:1:8 Cannot import a package-private export 'default'",
+			  "src/default-export/foo.ts:2:8 Cannot import a private export 'default'",
 			  "src/default-export/foo.ts:4:10 Cannot import a package-private export 'default'",
 			  "src/directory-structure/sub/sub3/siblingUser.ts:1:10 Cannot import a package-private export 'subsubVar'",
 			  "src/directory-structure/subsubUser.ts:1:10 Cannot import a package-private export 'subsubVar'",
+			  "src/reexport/useBar.ts:1:10 Cannot import a private export 'subBar'",
 			  "src/reexport/useBaz.ts:1:10 Cannot import a private export 'subBaz'",
 			  "src/reexport/useFoo.ts:1:18 Cannot import a private export 'subFooPrivate'",
 			]

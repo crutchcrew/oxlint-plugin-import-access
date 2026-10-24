@@ -18,6 +18,7 @@ import { ModuleResolver } from "./resolveModule.ts"
 /**
  * A violation: the access level of the export, and its name as TypeScript reports it
  * (`default` for default exports, `export=` for `export =`).
+ * @package
  */
 export type Violation = {
 	readonly access: "package" | "private"
@@ -39,6 +40,7 @@ type FoundExport = {
 /**
  * Shared state for checking imports: resolver, parsed modules and ambient modules.
  * One instance lives for the whole process; its caches are keyed by file path.
+ * @public
  */
 export class ImportabilityChecker {
 	readonly resolver: ModuleResolver = new ModuleResolver()
@@ -163,6 +165,7 @@ export class ImportabilityChecker {
 
 /**
  * Per-options part of the check: compiled globs and package boundaries.
+ * @public
  */
 export class ImportabilityPolicy {
 	readonly options: PackageOptions
