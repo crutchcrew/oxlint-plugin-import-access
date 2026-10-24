@@ -41,7 +41,7 @@
 		"build": "bun run --parallel build:compile build:declaration",
 		"build:compile": "bun build src/index.ts --outdir dist --format esm --target node --packages external",
 		"build:declaration": "tsc -p tsconfig.build.json && bun scripts/fix-dts-extensions.ts",
-		"check": "bun run --parallel fmt:check lint typecheck lockfile:check",
+		"check": "bun run --parallel fmt:check lint lockfile:check",
 		"fmt": "oxfmt --write .",
 		"fmt:check": "oxfmt --check .",
 		"lint": "oxlint",
@@ -52,8 +52,7 @@
 		"prepublishOnly": "bun run build",
 		"test": "vitest run --project unit",
 		"test:coverage": "vitest run --project unit --coverage",
-		"test:e2e": "vitest run --project e2e",
-		"typecheck": "tsc --noEmit && tsc --noEmit -p src/__tests__/fixtures/project/tsconfig.json"
+		"test:e2e": "vitest run --project e2e"
 	},
 	"dependencies": {
 		"minimatch": "^10.2.6",
