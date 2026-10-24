@@ -67,6 +67,13 @@
 	"peerDependencies": {
 		"oxlint": ">=1.40.0"
 	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": ">=22.18.0",
+			"onFail": "warn"
+		}
+	},
 	"engines": {
 		"node": "^20.19.0 || >=22.12.0"
 	}

@@ -1,12 +1,14 @@
 pre-commit:
-  parallel: true
+  # Both jobs rewrite staged files, so they run one after the other:
+  # lint fixes first, then formatting, so the committed result is formatted.
+  piped: true
   jobs:
-    - name: fmt
-      glob: "*.{ts,tsx,js,jsx,json,css,md}"
-      run: bunx oxfmt {staged_files}
-      stage_fixed: true
-
     - name: lint
       glob: "*.{ts,tsx,js,jsx}"
       run: bunx oxlint --fix {staged_files}
+      stage_fixed: true
+
+    - name: fmt
+      glob: "*.{ts,tsx,js,jsx,json,css,md}"
+      run: bunx oxfmt {staged_files}
       stage_fixed: true
