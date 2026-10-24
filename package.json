@@ -50,9 +50,9 @@
 		"prebuild": "rm -rf dist",
 		"prepare": "lefthook install",
 		"prepublishOnly": "bun run build",
-		"test": "vitest run",
-		"test:coverage": "vitest run --coverage",
-		"test:e2e": "vitest run --config vitest.e2e.config.ts",
+		"test": "vitest run --project unit",
+		"test:coverage": "vitest run --project unit --coverage",
+		"test:e2e": "vitest run --project e2e",
 		"typecheck": "tsc --noEmit && tsc --noEmit -p src/__tests__/fixtures/project/tsconfig.json"
 	},
 	"dependencies": {
