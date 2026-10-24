@@ -1,7 +1,7 @@
 {
 	"name": "@crutchcrew/oxlint-plugin-import-access",
 	"version": "0.0.0",
-	"description": "Oxlint JS plugin for package-private imports via JSDoc @package, without a type checker",
+	"description": "Oxlint JS plugin for import access via JSDoc @public, @package and @private, without a type checker",
 	"keywords": [
 		"import-access",
 		"jsdoc",

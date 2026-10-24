@@ -5,7 +5,7 @@
 [![provenance](https://img.shields.io/badge/provenance-verified-brightgreen)](https://www.npmjs.com/package/@crutchcrew/oxlint-plugin-import-access)
 [![license](https://img.shields.io/npm/l/@crutchcrew/oxlint-plugin-import-access)](./LICENSE)
 
-Package-private exports for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Exports are `@public` by default; tag one `@package` to keep it inside its directory, or `@private` so it can't be imported at all.
+JSDoc import access for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Only `@public` exports can be imported from anywhere, and an export without an access tag is `@public`. Tag an export `@package` to keep it inside its directory, or `@private` so it can't be imported at all. To make untagged exports `@package` or `@private` instead, set [`defaultImportability`](#options).
 
 A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.com/uhyo/eslint-plugin-import-access) that needs **no type checker**: no `typescript` dependency, no `tsconfig.json` project loading, no typed linting setup.
 
@@ -18,7 +18,7 @@ A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.c
 
 ## Why?
 
-The largest encapsulation unit TypeScript gives you is a file. Once something is exported, the whole project can import it. Keeping things private means keeping them in one file, and files grow large.
+The largest encapsulation unit TypeScript gives you is a file. Once something is exported, it is `@public`: the whole project can import it. Keeping things private means keeping them in one file, and files grow large.
 
 `@package` adds a directory-level layer: an export marked `@package` is visible to its own directory (and its subdirectories), but not to the rest of the project.
 
@@ -30,15 +30,20 @@ The largest encapsulation unit TypeScript gives you is a file. Once something is
  */
 export const fooPackageVariable = "I am package-private export"
 
+// No access tag, so this export is @public
+export const fooPublicVariable = "I am public export"
+
 // ----- sub/bar.ts -----
 // Correct: foo.ts is in the same directory
 import { fooPackageVariable } from "./foo"
 // ----- baz.ts -----
+// Correct: @public exports can be imported from anywhere
+import { fooPublicVariable } from "./sub/foo"
 // Error: package-private exports cannot be imported from outside sub/
 import { fooPackageVariable } from "./sub/foo"
 ```
 
-`@private` exports can't be imported at all, and `defaultImportability` makes every untagged export package-private or private.
+`@private` exports can't be imported at all. With `defaultImportability: "package"` or `"private"`, untagged exports are `@package` or `@private`, and only exports tagged `@public` can be imported from anywhere.
 
 ## Why this package
 
@@ -94,6 +99,7 @@ import { defineConfig } from "oxlint"
 export default defineConfig({
 	jsPlugins: ["@crutchcrew/oxlint-plugin-import-access"],
 	rules: {
+		// Untagged exports are @package; tag an export @public to import it from anywhere
 		"import-access/jsdoc": ["error", { defaultImportability: "package" }],
 	},
 })
@@ -107,12 +113,12 @@ That's all: there is no parser or project to configure. Diagnostics also show up
 | ----------------------- | ------------ | ------------------------------------------------------------------------------------------ |
 | `indexLoophole`         | `true`       | `sub/index.ts` counts as `sub.ts`, so its package-private exports are visible one level up |
 | `filenameLoophole`      | `false`      | `foo.ts` may import package-private exports from `foo/`                                    |
-| `defaultImportability`  | `"public"`   | Access of exports without a tag: `"public"`, `"package"` or `"private"`                    |
+| `defaultImportability`  | `"public"`   | Access of exports without a tag: `"public"` (`@public`), `"package"` or `"private"`        |
 | `treatSelfReferenceAs`  | `"external"` | Whether imports through your own package name are checked (`"internal"`) or not            |
 | `excludeSourcePatterns` | `[]`         | Globs (relative to the working directory) of exporter files to skip, e.g. generated code   |
 | `packageDirectory`      | every dir    | Globs of directories that are package boundaries, e.g. `["**", "!**/_internal"]`           |
 
-All options and access tags (`@package`, `@private`, `@public`, `@access <level>`) behave as in the original plugin. See the **[rule documentation](./docs/rule-jsdoc.md)** for details and examples.
+All options and access tags (`@public`, `@package`, `@private`, `@access <level>`) behave as in the original plugin. See the **[rule documentation](./docs/rule-jsdoc.md)** for details and examples.
 
 ## How it works
 

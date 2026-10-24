@@ -1,8 +1,12 @@
 # `import-access/jsdoc` rule
 
-When this rule is enabled, `export` declarations can have a JSDoc `@package` annotation. Such exports can be imported only from files in the same "package" (or sub packages). By default, every directory is a package.
+This rule checks every import against the JSDoc access tag of the imported export:
 
-As a bonus feature, importing exports annotated with `@private` is always forbidden.
+- `@public` exports can be imported from anywhere. An export without an access tag is `@public` (see [`defaultImportability`](#defaultimportability)).
+- `@package` exports can be imported only from files in the same "package" (or sub packages). By default, every directory is a package.
+- `@private` exports can't be imported at all.
+
+`@access public`, `@access package` and `@access private` work the same as the short tags.
 
 The rule needs no type information and no `tsconfig.json`: see [How exports are found](#how-exports-are-found).
 
@@ -37,10 +41,15 @@ The rule needs no type information and no `tsconfig.json`: see [How exports are 
  */
 export const fooPackageVariable = "I am package-private export"
 
+// No access tag, so this export is @public
+export const fooPublicVariable = "I am public export"
+
 // ----- sub/bar.ts -----
 // This is correct because foo.ts is in the same directory
 import { fooPackageVariable } from "./foo"
 // ----- baz.ts -----
+// This is correct because @public exports can be imported from anywhere
+import { fooPublicVariable } from "./sub/foo"
 // This is INCORRECT because package-private exports
 // cannot be imported from outside the sub directory
 import { fooPackageVariable } from "./sub/foo"
@@ -141,11 +150,11 @@ import { pika } from "./sub/foo"
 
 _Default value: `public`_
 
-You can set default importability value that applies to the entire project.
+Sets the access of exports without an access tag, for the entire project. With the default `public`, they are treated as `@public` and can be imported from anywhere; only exports tagged `@package` or `@private` are restricted.
 
-For example, if you set the default importability to `package`, any export without JSDoc annotation is treated as `@package`.
+Set it to `package` to treat every untagged export as `@package`, or to `private` to treat every untagged export as `@private`. Then only exports tagged `@public` can be imported from anywhere.
 
-You can override this default value by adding JSDoc annotation to the export. To make an export public, add `@public` annotation.
+An access tag on an export always overrides this default.
 
 **Example:**
 
@@ -155,12 +164,19 @@ You can override this default value by adding JSDoc annotation to the export. To
 
 export const pika = "chu" // no JSDoc, but automatically applied @package
 
+/**
+ * @public
+ */
+export const raichu = "rai"
+
 // ----- sub/foo.ts
 // you can import
 import { pika } from "./bar"
 // ----- bar2.ts
 // you cannot import because pika is @package
 import { pika } from "./sub/bar"
+// you can import because raichu is @public
+import { raichu } from "./sub/bar"
 ```
 
 ### `treatSelfReferenceAs`
