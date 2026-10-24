@@ -9,7 +9,12 @@ Package-private exports for TypeScript, enforced by [oxlint](https://oxc.rs/docs
 
 A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.com/uhyo/eslint-plugin-import-access) that needs **no type checker**: no `typescript` dependency, no `tsconfig.json` project loading, no typed linting setup.
 
+<details>
+<summary>How <code>@package</code> works</summary>
+
 ![Illustration of how `@package` works.](./docs/images/concept.png)
+
+</details>
 
 ## Why?
 
