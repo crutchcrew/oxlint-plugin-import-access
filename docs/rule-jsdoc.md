@@ -29,16 +29,15 @@ As a bonus feature, importing exports annotated with `@private` is always forbid
 /**
  * @package
  */
-export const fooPackageVariable = "I am package-private export";
+export const fooPackageVariable = "I am package-private export"
 
 // ----- sub/bar.ts -----
 // This is correct because foo.ts is in the same directory
-import { fooPackageVariable } from "./foo";
-
+import { fooPackageVariable } from "./foo"
 // ----- baz.ts -----
 // This is INCORRECT because package-private exports
 // cannot be imported from outside the sub directory
-import { fooPackageVariable } from "./sub/foo";
+import { fooPackageVariable } from "./sub/foo"
 ```
 
 ## Options
@@ -47,13 +46,13 @@ The `import-access/jsdoc` rule has the following options. All options are option
 
 ```ts
 type JSDocRuleOptions = {
-  indexLoophole: boolean;
-  filenameLoophole: boolean;
-  defaultImportability: "public" | "package" | "private";
-  treatSelfReferenceAs: "internal" | "external";
-  excludeSourcePatterns?: string[];
-  packageDirectory?: string[];
-};
+	indexLoophole: boolean
+	filenameLoophole: boolean
+	defaultImportability: "public" | "package" | "private"
+	treatSelfReferenceAs: "internal" | "external"
+	excludeSourcePatterns?: string[]
+	packageDirectory?: string[]
+}
 ```
 
 ### `indexLoophole`
@@ -71,19 +70,19 @@ Enables the **index loophole** feature. When this option is enabled, `sub/index.
 /**
  * @package
  */
-export const subIndex = 3;
+export const subIndex = 3
 
 // ----- sub/foo.ts
 /**
  * @package
  */
-export const foo = 3;
+export const foo = 3
 
 // ----- main.ts
 // This is CORRECT under indexLoophole: true
-import { subIndex } from "./sub";
+import { subIndex } from "./sub"
 // This is still INCORRECT
-import { foo } from "./sub/foo";
+import { foo } from "./sub/foo"
 ```
 
 Note that the loophole is effective only for one level. That is, package-private exports from `index.ts` cannot be imported from files in the parent directory's parent directory.
@@ -121,17 +120,16 @@ Enables the **filename loophole** feature. When this option is enabled, package-
 /**
  * @package
  */
-export const pika = "chu";
+export const pika = "chu"
 
 // ----- sub.ts
 // This is correct to import a package-private exports
 // from the directory named `sub`
-import { pika } from "./sub/foo";
-
+import { pika } from "./sub/foo"
 // ----- pika.ts
 // This is still INCORRECT because file name does not match
 // the directory name
-import { pika } from "./sub/foo";
+import { pika } from "./sub/foo"
 ```
 
 ### `defaultImportability`
@@ -178,11 +176,11 @@ When this option is set to `internal`, self reference is treated as an internal 
 /**
  * @package
  */
-export const something = "something";
+export const something = "something"
 
 // ----- src/main.ts
 // This is CORRECT when treatSelfReferenceAs: external
-import { something } from "my-package/foo";
+import { something } from "my-package/foo"
 ```
 
 In the above example, `my-package/foo` is a self reference that connects to `src/somewhere/foo.ts`.
@@ -206,23 +204,23 @@ The patterns use the [minimatch](https://github.com/isaacs/minimatch) library's 
 ```ts
 // Example: Match by file path
 // excludeSourcePatterns: ["src/types/**/*.d.ts"]
-import { typeDefinition } from "../types/api"; // Allowed if the implementation is in a .d.ts file in the src/types directory
+import { typeDefinition } from "../types/api" // Allowed if the implementation is in a .d.ts file in the src/types directory
 ```
 
 Additional examples:
 
 ```js
 // Match all files in a particular directory
-"src/generated/**";
+"src/generated/**"
 
 // Match multiple extensions
-"**/*.{generated,auto}.{ts,js}";
+"**/*.{generated,auto}.{ts,js}"
 
 // Match files with specific naming patterns
-"**/[a-z]*.auto.ts";
+"**/[a-z]*.auto.ts"
 
 // Match specific type definition files
-"src/**/*.d.ts";
+"src/**/*.d.ts"
 ```
 
 **Next.js specific configuration:**

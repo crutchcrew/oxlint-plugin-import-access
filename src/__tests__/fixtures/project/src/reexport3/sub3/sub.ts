@@ -1,5 +1,5 @@
-import { TSESLint } from "@typescript-eslint/utils";
+import { foo } from "@fixture-package-third-party/has-sub-module";
 import { subBar } from "../sub2/bar";
 
-console.log(TSESLint);
+console.log(foo);
 console.log(subBar);
