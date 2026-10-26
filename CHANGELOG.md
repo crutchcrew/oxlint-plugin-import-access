@@ -2,7 +2,7 @@
 
 ## @crutchcrew/oxlint-plugin-import-access
 
-### 1.0.0 (unreleased)
+### 1.0.0
 
 First release of the oxlint port.
 
