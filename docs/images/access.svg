@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+	<title id="title">How import-access/jsdoc decides which imports are allowed</title>
+	<desc id="desc">sub/foo.ts exports api tagged @public, helper without a tag, which makes it @package, and secret tagged @private. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.</desc>
+	<style>
+		.bg { fill: #ffffff }
+		.card { fill: #f6f8fa; stroke: #d0d7de }
+		.rule { stroke: #d0d7de }
+		.text { fill: #1f2328 }
+		.muted { fill: #59636e }
+		.kw { fill: #8250df }
+		.str { fill: #0a3069 }
+		.cm { fill: #6e7781 }
+		.ok { fill: #1a7f37 }
+		.pkg { fill: #9a6700 }
+		.err { fill: #cf222e }
+		.ok-pill { fill: #1a7f37; fill-opacity: 0.12; stroke: #1a7f37; stroke-opacity: 0.45 }
+		.pkg-pill { fill: #9a6700; fill-opacity: 0.12; stroke: #9a6700; stroke-opacity: 0.45 }
+		.err-pill { fill: #cf222e; fill-opacity: 0.12; stroke: #cf222e; stroke-opacity: 0.45 }
+		.none-pill { fill: #59636e; fill-opacity: 0.12; stroke: #59636e; stroke-opacity: 0.45 }
+		.boundary { fill: #9a6700; fill-opacity: 0.04; stroke: #9a6700; stroke-dasharray: 8 6 }
+		@media (prefers-color-scheme: dark) {
+			.bg { fill: #0d1117 }
+			.card { fill: #161b22; stroke: #30363d }
+			.rule { stroke: #30363d }
+			.text { fill: #e6edf3 }
+			.muted { fill: #9198a1 }
+			.kw { fill: #d2a8ff }
+			.str { fill: #a5d6ff }
+			.cm { fill: #8b949e }
+			.ok { fill: #3fb950 }
+			.pkg { fill: #d29922 }
+			.err { fill: #f85149 }
+			.ok-pill { fill: #3fb950; stroke: #3fb950 }
+			.pkg-pill { fill: #d29922; stroke: #d29922 }
+			.err-pill { fill: #f85149; stroke: #f85149 }
+			.none-pill { fill: #9198a1; stroke: #9198a1 }
+			.boundary { fill: #d29922; stroke: #d29922 }
+		}
+		text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px }
+		.code, .file { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace }
+		.code { font-size: 14px }
+		.file { font-size: 13px; font-weight: 700 }
+		.b { font-weight: 700 }
+		.verdict { font-weight: 700; text-anchor: middle }
+	</style>
+
+	<rect class="bg" width="960" height="540" />
+
+	<!-- The package: sub/ and its subdirectories -->
+	<rect class="boundary" x="40" y="40" width="880" height="272" rx="14" stroke-width="1.5" />
+	<text x="60" y="68"><tspan class="file pkg">sub/</tspan><tspan class="muted" dx="8">package: files in sub/ and its subdirectories</tspan></text>
+
+	<!-- sub/foo.ts: the exporter -->
+	<rect class="card" x="64" y="88" width="316" height="204" rx="10" />
+	<text class="file text" x="80" y="112">sub/foo.ts</text>
+	<line class="rule" x1="64" y1="124" x2="380" y2="124" />
+	<text class="code" x="80" y="146"><tspan class="cm">/** </tspan><tspan class="ok b">@public</tspan><tspan class="cm"> */</tspan></text>
+	<text class="code text" x="80" y="168"><tspan class="kw">export const</tspan> api = 1</text>
+	<text class="code" x="80" y="200"><tspan class="cm">// no tag → </tspan><tspan class="pkg b">@package</tspan></text>
+	<text class="code text" x="80" y="222"><tspan class="kw">export const</tspan> helper = 2</text>
+	<text class="code" x="80" y="254"><tspan class="cm">/** </tspan><tspan class="err b">@private</tspan><tspan class="cm"> */</tspan></text>
+	<text class="code text" x="80" y="276"><tspan class="kw">export const</tspan> secret = 3</text>
+
+	<!-- sub/bar.ts: importer inside the package -->
+	<rect class="card" x="404" y="88" width="492" height="204" rx="10" />
+	<text x="420" y="112"><tspan class="file text">sub/bar.ts</tspan><tspan class="muted" dx="10">same package</tspan></text>
+	<line class="rule" x1="404" y1="124" x2="896" y2="124" />
+	<text class="code text" x="420" y="168"><tspan class="kw">import</tspan> { api } <tspan class="kw">from</tspan> <tspan class="str">"./foo"</tspan></text>
+	<rect class="ok-pill" x="768" y="150" width="112" height="26" rx="13" />
+	<text class="verdict ok" x="824" y="168">✓ allowed</text>
+	<line class="rule" x1="420" y1="189" x2="880" y2="189" />
+	<text class="code text" x="420" y="216"><tspan class="kw">import</tspan> { helper } <tspan class="kw">from</tspan> <tspan class="str">"./foo"</tspan></text>
+	<rect class="ok-pill" x="768" y="198" width="112" height="26" rx="13" />
+	<text class="verdict ok" x="824" y="216">✓ allowed</text>
+	<line class="rule" x1="420" y1="237" x2="880" y2="237" />
+	<text class="code text" x="420" y="264"><tspan class="kw">import</tspan> { secret } <tspan class="kw">from</tspan> <tspan class="str">"./foo"</tspan></text>
+	<rect class="err-pill" x="768" y="246" width="112" height="26" rx="13" />
+	<text class="verdict err" x="824" y="264">✗ @private</text>
+
+	<!-- src/main.ts: importer outside the package -->
+	<rect class="card" x="404" y="336" width="492" height="180" rx="10" />
+	<text x="420" y="360"><tspan class="file text">src/main.ts</tspan><tspan class="muted" dx="10">outside the package</tspan></text>
+	<line class="rule" x1="404" y1="372" x2="896" y2="372" />
+	<text class="code text" x="420" y="404"><tspan class="kw">import</tspan> { api } <tspan class="kw">from</tspan> <tspan class="str">"./sub/foo"</tspan></text>
+	<rect class="ok-pill" x="768" y="386" width="112" height="26" rx="13" />
+	<text class="verdict ok" x="824" y="404">✓ allowed</text>
+	<line class="rule" x1="420" y1="423" x2="880" y2="423" />
+	<text class="code text" x="420" y="450"><tspan class="kw">import</tspan> { helper } <tspan class="kw">from</tspan> <tspan class="str">"./sub/foo"</tspan></text>
+	<rect class="pkg-pill" x="768" y="432" width="112" height="26" rx="13" />
+	<text class="verdict pkg" x="824" y="450">✗ @package</text>
+	<line class="rule" x1="420" y1="469" x2="880" y2="469" />
+	<text class="code text" x="420" y="496"><tspan class="kw">import</tspan> { secret } <tspan class="kw">from</tspan> <tspan class="str">"./sub/foo"</tspan></text>
+	<rect class="err-pill" x="768" y="478" width="112" height="26" rx="13" />
+	<text class="verdict err" x="824" y="496">✗ @private</text>
+
+	<!-- Legend -->
+	<text class="text b" x="64" y="364" style="font-size: 14px">Who can import an export</text>
+	<rect class="ok-pill" x="64" y="384" width="84" height="24" rx="12" />
+	<text class="file ok" x="106" y="401" text-anchor="middle">@public</text>
+	<text class="text" x="160" y="401">any file</text>
+	<rect class="pkg-pill" x="64" y="416" width="84" height="24" rx="12" />
+	<text class="file pkg" x="106" y="433" text-anchor="middle">@package</text>
+	<text class="text" x="160" y="433">files in the same package</text>
+	<rect class="err-pill" x="64" y="448" width="84" height="24" rx="12" />
+	<text class="file err" x="106" y="465" text-anchor="middle">@private</text>
+	<text class="text" x="160" y="465">no file</text>
+	<rect class="none-pill" x="64" y="480" width="84" height="24" rx="12" />
+	<text class="file muted" x="106" y="497" text-anchor="middle">no tag</text>
+	<text class="text" x="160" y="497">same as @package (default)</text>
+</svg>

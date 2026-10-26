@@ -4,6 +4,7 @@ import type { Importability } from "./options.ts"
 /**
  * Access level declared by JSDoc tags: the first of `@package`, `@private`, `@public`
  * or `@access <level>` wins, otherwise `defaultImportability`.
+ * @public
  */
 export function getAccessOfJsDocs(
 	tags: readonly Tag[],

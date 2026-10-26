@@ -2,11 +2,13 @@ import type { Plugin } from "@oxlint/plugins"
 
 import jsdoc from "./rules/jsdoc.ts"
 
+/** @public */
 export type { Importability, JSDocRuleOptions } from "./utils/options.ts"
 
 /**
  * Shape of the plugin object. Declared here so the published types don't depend on
  * `@oxlint/plugins`; it is checked against oxlint's `Plugin` type below.
+ * @public
  */
 export type ImportAccessPlugin = {
 	readonly meta: { readonly name: "import-access" }
@@ -29,4 +31,5 @@ const plugin: ImportAccessPlugin = {
 	rules: { jsdoc },
 } satisfies Plugin
 
+/** @public */
 export default plugin

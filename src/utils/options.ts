@@ -1,7 +1,9 @@
+/** @public */
 export type Importability = "public" | "package" | "private"
 
 /**
  * Options of the `import-access/jsdoc` rule.
+ * @public
  */
 export type JSDocRuleOptions = {
 	/**
@@ -17,7 +19,7 @@ export type JSDocRuleOptions = {
 	filenameLoophole: boolean
 	/**
 	 * Importability of exports that have no access tag in their JSDoc.
-	 * @default "public"
+	 * @default "package"
 	 */
 	defaultImportability: Importability
 	/**
@@ -41,6 +43,7 @@ export type JSDocRuleOptions = {
 
 /**
  * Resolved options used by the importability check.
+ * @public
  */
 export type PackageOptions = Readonly<JSDocRuleOptions> & {
 	/** Base directory for relative glob patterns. */
@@ -50,13 +53,14 @@ export type PackageOptions = Readonly<JSDocRuleOptions> & {
 export const defaultOptions: JSDocRuleOptions = {
 	indexLoophole: true,
 	filenameLoophole: false,
-	defaultImportability: "public",
+	defaultImportability: "package",
 	treatSelfReferenceAs: "external",
 	excludeSourcePatterns: [],
 }
 
 /**
  * Fill in defaults for user-provided options.
+ * @public
  */
 export function normalizeOptions(
 	options: Partial<JSDocRuleOptions> | undefined,

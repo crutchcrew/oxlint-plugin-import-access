@@ -39,6 +39,7 @@ type FoundExport = {
 /**
  * Shared state for checking imports: resolver, parsed modules and ambient modules.
  * One instance lives for the whole process; its caches are keyed by file path.
+ * @public
  */
 export class ImportabilityChecker {
 	readonly resolver: ModuleResolver = new ModuleResolver()
@@ -163,6 +164,7 @@ export class ImportabilityChecker {
 
 /**
  * Per-options part of the check: compiled globs and package boundaries.
+ * @public
  */
 export class ImportabilityPolicy {
 	readonly options: PackageOptions

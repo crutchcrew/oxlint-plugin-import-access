@@ -1,5 +1,6 @@
 /**
  * A JSDoc tag such as `@package` or `@access package`.
+ * @public
  */
 export type Tag = {
 	readonly name: string
@@ -9,6 +10,7 @@ export type Tag = {
 /**
  * Minimal comment shape shared by oxc-parser and oxlint's `sourceCode`.
  * `value` excludes the `/*` and `*\/` delimiters.
+ * @public
  */
 export type Comment = {
 	readonly type: "Line" | "Block"
@@ -185,12 +187,14 @@ export function parseJsDocTags(comment: Comment): Tag[] {
 /**
  * Tags as TypeScript reports them for a node: `symbol.getJsDocTags()` only sees the last JSDoc block
  * (`own`), while the declaration's `jsDoc` holds every block (`all`).
+ * @public
  */
 export type NodeTags = {
 	readonly own: readonly Tag[]
 	readonly all: readonly Tag[]
 }
 
+/** @public */
 export function jsDocTagsAt(
 	sourceText: string,
 	comments: readonly Comment[],

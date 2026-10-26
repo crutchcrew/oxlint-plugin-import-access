@@ -11,6 +11,7 @@ type CompiledPattern = { readonly negated: boolean; readonly matcher: Minimatch 
 /**
  * Decides which directory is the "package" of a file and whether two files share a package.
  * Create one per options object: it memoizes per-directory answers.
+ * @public
  */
 export class PackageBoundaries {
 	readonly #options: PackageOptions

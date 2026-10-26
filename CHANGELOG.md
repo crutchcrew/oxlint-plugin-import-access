@@ -6,7 +6,8 @@
 
 First release of the oxlint port.
 
-- Native oxlint JS plugin (`createOnce` API) with the `import-access/jsdoc` rule: same options, messages and results as `eslint-plugin-import-access` 3.1.0.
+- Native oxlint JS plugin (`createOnce` API) with the `import-access/jsdoc` rule: same options, messages and results as `eslint-plugin-import-access` 3.1.0, except for the default below.
+- `defaultImportability` defaults to `"package"`: only `@public` exports can be imported from anywhere, and untagged exports only from their own package. Set `defaultImportability: "public"` for upstream's default.
 - No type checker: imports are resolved with oxc-resolver and exports read with oxc-parser, so no `typescript` dependency, typed linting or `tsconfig.json` is needed.
 - Supports ambient `declare module` and wildcard (`declare module "*.svg"`) declarations, `export =`, `export *` chains and TypeScript's JSDoc attachment rules.
 - Re-validates changed files in long-running hosts such as the oxlint language server.

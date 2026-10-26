@@ -117,4 +117,5 @@ const rule: CreateOnceRule = {
 	},
 }
 
+/** @public */
 export default rule
