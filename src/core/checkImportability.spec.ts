@@ -72,6 +72,22 @@ describe("ImportabilityChecker", () => {
 		expect(policy().check(checker, user, "./sub/later", "value")?.access).toBe("package")
 	})
 
+	it("looks up package names again in a language server", () => {
+		// `pkg/exporter` resolves through `paths`; while the package is named `pkg`, it is a self-reference.
+		writeFileSync(
+			path.join(dir, "tsconfig.json"),
+			JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "pkg/*": ["sub/*"] } } }),
+		)
+		writeFileSync(path.join(dir, "package.json"), JSON.stringify({ name: "pkg" }))
+		const checker = new ImportabilityChecker(true)
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "pkg/exporter", "value")).toBeUndefined()
+
+		writeFileSync(path.join(dir, "package.json"), JSON.stringify({ name: "renamed" }))
+		checker.nextFile(user)
+		expect(policy().check(checker, user, "pkg/exporter", "value")?.access).toBe("package")
+	})
+
 	it("detects the language server from the command line by default", () => {
 		const argv = process.argv
 		process.argv = [...argv, "--lsp"]

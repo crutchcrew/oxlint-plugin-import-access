@@ -22,10 +22,8 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - run: bun install
-
-      - name: Lockfile drift
-        run: bun lockfile:check
+      # A plain `bun install` would rewrite a lockfile that drifted from package.json; frozen, it fails.
+      - run: bun install --frozen-lockfile
 
       - name: Format
         run: bun run fmt:check
