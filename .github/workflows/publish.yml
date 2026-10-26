@@ -16,11 +16,12 @@ permissions:
 
 jobs:
   publish:
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    # npm rejects provenance from self-hosted runners, which includes Blacksmith's: use a GitHub-hosted one.
+    runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
 
