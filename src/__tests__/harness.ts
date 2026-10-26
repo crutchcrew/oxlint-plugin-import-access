@@ -12,13 +12,9 @@ RuleTester.describe = describe
 RuleTester.it = it
 RuleTester.itOnly = it.only
 
-/**
- * Root of the fixture project; also the linter's working directory.
- * @package
- */
+/** Root of the fixture project; also the linter's working directory. */
 export const projectRoot: string = path.resolve(import.meta.dirname, "fixtures/project")
 
-/** @package */
 export type ExpectedError = {
 	readonly messageId: "package" | "package:reexport" | "private" | "private:reexport"
 	readonly data: { readonly identifier: string }
@@ -28,7 +24,6 @@ export type ExpectedError = {
 	readonly endColumn: number
 }
 
-/** @package */
 export type FixtureCase = {
 	readonly name: string
 	/** Path of the file to lint, relative to `projectRoot`. */
@@ -41,7 +36,6 @@ export type FixtureCase = {
 /**
  * Defaults of upstream's rule, where exports without an access tag are public.
  * The suites converted from upstream expect them.
- * @package
  */
 export const upstreamDefaults: Partial<JSDocRuleOptions> = { defaultImportability: "public" }
 
@@ -51,7 +45,6 @@ export const upstreamDefaults: Partial<JSDocRuleOptions> = { defaultImportabilit
  * Each case's options are applied over `baseOptions`; pass `{}` to test this rule's own defaults.
  *
  * `eslintCompat` keeps ESLint's 1-based columns, so expectations match upstream's snapshots.
- * @package
  */
 export function testFixtures(
 	suite: string,

@@ -19,7 +19,7 @@ export type JSDocRuleOptions = {
 	filenameLoophole: boolean
 	/**
 	 * Importability of exports that have no access tag in their JSDoc.
-	 * @default "private"
+	 * @default "package"
 	 */
 	defaultImportability: Importability
 	/**
@@ -50,11 +50,10 @@ export type PackageOptions = Readonly<JSDocRuleOptions> & {
 	readonly projectDirectory: string
 }
 
-/** @package */
 export const defaultOptions: JSDocRuleOptions = {
 	indexLoophole: true,
 	filenameLoophole: false,
-	defaultImportability: "private",
+	defaultImportability: "package",
 	treatSelfReferenceAs: "external",
 	excludeSourcePatterns: [],
 }

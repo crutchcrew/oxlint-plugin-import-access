@@ -5,19 +5,19 @@
 [![provenance](https://img.shields.io/badge/provenance-verified-brightgreen)](https://www.npmjs.com/package/@crutchcrew/oxlint-plugin-import-access)
 [![license](https://img.shields.io/npm/l/@crutchcrew/oxlint-plugin-import-access)](./LICENSE)
 
-JSDoc import access for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Only `@public` exports can be imported from anywhere, and an export without an access tag is `@private`. Tag an export `@public` to share it with the whole project, or `@package` to share it only inside its directory. To make untagged exports `@package` or `@public` instead, set [`defaultImportability`](#options).
+JSDoc import access for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Only `@public` exports can be imported from anywhere, and an export without an access tag is `@package`: only files in its own directory can import it. Tag an export `@public` to share it with the whole project, or `@private` so no other file can import it. To make untagged exports `@public` or `@private` instead, set [`defaultImportability`](#options).
 
 A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.com/uhyo/eslint-plugin-import-access) that needs **no type checker**: no `typescript` dependency, no `tsconfig.json` project loading, no typed linting setup.
 
 ## Access tags
 
-![sub/foo.ts exports api tagged @public, helper tagged @package and secret without a tag. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.](./docs/images/access.svg)
+![sub/foo.ts exports api tagged @public, helper without a tag and secret tagged @private. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.](./docs/images/access.svg)
 
 Each export's JSDoc access tag decides which files can import it. A package is a directory with its subdirectories, and by default every directory is one (see [`packageDirectory`](./docs/rule-jsdoc.md#packagedirectory)). In the picture, `sub/foo.ts` has three exports:
 
 - `api` is **`@public`**: any file can import it, `sub/bar.ts` as well as `src/main.ts`.
-- `helper` is **`@package`**: files in `sub/` and its subdirectories can import it, so `sub/bar.ts` can and `src/main.ts` can't.
-- `secret` has **no tag**, so it is `@private`: no file can import it, not even `sub/bar.ts` next to it.
+- `helper` has **no tag**, so it is `@package`: files in `sub/` and its subdirectories can import it, so `sub/bar.ts` can and `src/main.ts` can't.
+- `secret` is **`@private`**: no file can import it, not even `sub/bar.ts` next to it.
 
 Imports from Node.js builtins and from anything in `node_modules` are never checked.
 
@@ -25,7 +25,7 @@ Imports from Node.js builtins and from anything in `node_modules` are never chec
 
 The largest encapsulation unit TypeScript gives you is a file. Once something is exported, the whole project can import it. Keeping things private means keeping them in one file, and files grow large.
 
-This plugin turns that around: an export stays `@private` until you tag it. Tag what the rest of the project may use `@public`, and what only its own directory may use `@package`, a directory-level layer between a file and the whole project.
+This plugin adds a directory-level layer between a file and the whole project: an export stays inside its directory (`@package`) until you tag it `@public`. Tag what the rest of the project may use `@public`, and what no other file may use `@private`.
 
 ## Why this package
 
@@ -38,7 +38,7 @@ This plugin turns that around: an export stays `@private` until you tag it. Tag 
 | **Checks unsaved edits in the editor** | ✅           | ✅                                                                                 | ❌ skipped until saved                                                                   |
 | **Same results as the original rule**  | ✅ verified¹ | –                                                                                  | ✅                                                                                       |
 
-¹ With `defaultImportability: "public"`, which makes exports without an access tag `@public` like in the original. This plugin's default is `"private"`.
+¹ With `defaultImportability: "public"`, which makes exports without an access tag `@public` like in the original. This plugin's default is `"package"`.
 
 ## Install
 
@@ -84,7 +84,7 @@ export default defineConfig({
 	jsPlugins: ["@crutchcrew/oxlint-plugin-import-access"],
 	rules: {
 		// Untagged exports are @package; tag an export @public to import it from anywhere
-		"import-access/jsdoc": ["error", { defaultImportability: "package" }],
+		"import-access/jsdoc": "error",
 	},
 })
 ```
@@ -97,12 +97,12 @@ That's all: there is no parser or project to configure. Diagnostics also show up
 | ----------------------- | ------------ | ------------------------------------------------------------------------------------------ |
 | `indexLoophole`         | `true`       | `sub/index.ts` counts as `sub.ts`, so its package-private exports are visible one level up |
 | `filenameLoophole`      | `false`      | `foo.ts` may import package-private exports from `foo/`                                    |
-| `defaultImportability`  | `"private"`  | Access of exports without a tag: `"private"` (`@private`), `"package"` or `"public"`       |
+| `defaultImportability`  | `"package"`  | Access of exports without a tag: `"package"` (`@package`), `"public"` or `"private"`       |
 | `treatSelfReferenceAs`  | `"external"` | Whether imports through your own package name are checked (`"internal"`) or not            |
 | `excludeSourcePatterns` | `[]`         | Globs (relative to the working directory) of exporter files to skip, e.g. generated code   |
 | `packageDirectory`      | every dir    | Globs of directories that are package boundaries, e.g. `["**", "!**/_internal"]`           |
 
-All options and access tags (`@public`, `@package`, `@private`, `@access <level>`) behave as in the original plugin, except that `defaultImportability` defaults to `"private"` instead of `"public"`. See the **[rule documentation](./docs/rule-jsdoc.md)** for details and examples.
+All options and access tags (`@public`, `@package`, `@private`, `@access <level>`) behave as in the original plugin, except that `defaultImportability` defaults to `"package"` instead of `"public"`. See the **[rule documentation](./docs/rule-jsdoc.md)** for details and examples.
 
 ## How it works
 
@@ -136,7 +136,7 @@ In a long-running editor session, files are re-checked as they change: exporter 
 ## Coming from eslint-plugin-import-access
 
 1. Install oxlint and this package, and remove `eslint-plugin-import-access` from your ESLint config.
-2. Move your rule options unchanged to `"import-access/jsdoc"` in the oxlint config. If you didn't set `defaultImportability`, set it to `"public"` to keep the original's behavior: here, untagged exports are `@private` by default.
+2. Move your rule options unchanged to `"import-access/jsdoc"` in the oxlint config. If you didn't set `defaultImportability`, set it to `"public"` to keep the original's behavior: here, untagged exports are `@package` by default.
 3. For IDE auto-import filtering you can keep using the original package's [TypeScript language service plugin](https://github.com/uhyo/eslint-plugin-import-access/blob/master/docs/ts-server.md) (it only needs TypeScript, not ESLint); this package has no language service plugin of its own.
 
 ## Contributing

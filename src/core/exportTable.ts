@@ -8,7 +8,6 @@ import { type Comment, jsDocTagsAt, type NodeTags, type Tag } from "../utils/jsd
 /**
  * Where the declaration of an export keeps the JSDoc that TypeScript's
  * `symbol.getJsDocTags()` reads.
- * @package
  */
 export type OwnJsDoc =
 	/** Declarations that are statements: functions, classes, `export default …`, `export =`. */
@@ -22,7 +21,6 @@ export type OwnJsDoc =
 
 /**
  * One export of a name by a module, in the shape the importability check needs.
- * @package
  */
 export type ExportEntry = {
 	/**
@@ -37,7 +35,6 @@ export type ExportEntry = {
 
 /**
  * Exports of one module file.
- * @package
  */
 export type ModuleExports = {
 	readonly fileName: string
@@ -52,10 +49,7 @@ export type ModuleExports = {
 	tagsOf(entries: readonly ExportEntry[]): Tag[]
 }
 
-/**
- * Name under which a module's `export = value` is stored, as TypeScript names the symbol.
- * @package
- */
+/** Name under which a module's `export = value` is stored, as TypeScript names the symbol. */
 export const EXPORT_EQUALS = "export="
 
 /**
@@ -69,7 +63,6 @@ const starExportPattern =
 /** Hint that a file may contain `export = value`; the AST confirms it. */
 const exportEqualsHint = /\bexport\s*=(?!=)/
 
-/** @package */
 export function skipTrivia(text: string, pos: number): number {
 	for (;;) {
 		const code = text.charCodeAt(pos)
@@ -232,7 +225,6 @@ function syntaxDetails(program: Program): SyntaxDetails {
 	return { decoratorStarts, exportLists, exportEquals, variables }
 }
 
-/** @package */
 export function createModuleExports(
 	fileName: string,
 	text: string,
@@ -305,7 +297,6 @@ export function createModuleExports(
  * Mostly oxc-parser's module record and comments are read. The syntax tree, several times
  * slower to get, is only used for files with decorators, `export =`, re-exported imports
  * or JSDoc inside variable statements.
- * @package
  */
 export function parseModuleExports(
 	fileName: string,
@@ -394,7 +385,6 @@ type CacheEntry = {
  * Files are re-validated (stat-ed, re-parsed when changed) at most once per generation.
  * In long-running hosts such as the oxlint language server, every linted file starts a new
  * generation; a CLI run stays in one generation and reads each file once.
- * @package
  */
 export class ExportTableCache {
 	readonly #entries = new Map<string, CacheEntry>()

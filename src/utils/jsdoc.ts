@@ -68,7 +68,6 @@ function lastCommentEndingBefore(comments: readonly Comment[], pos: number): num
  * - they must sit in the trivia between the previous token and the node,
  * - for statements, comments on the same line as the previous token belong to that token
  *   (`includeSameLine: false`); export specifiers and variable declarators take them too.
- * @package
  */
 export function findJsDocComments(
 	sourceText: string,
@@ -121,7 +120,6 @@ const tagNamePart = /[-\p{ID_Continue}$\u200c\u200d]/u
  *
  * A tag starts with `@` followed by its name, at the beginning of a line (after the optional `*`
  * margin) or after a space or tab, but not inside backticks. Its text runs until the next tag.
- * @package
  */
 export function parseJsDocTags(comment: Comment): Tag[] {
 	// `value` of `/** ... */` starts with the second `*` of the opening delimiter.

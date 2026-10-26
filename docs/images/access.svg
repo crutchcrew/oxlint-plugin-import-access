@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
 	<title id="title">How import-access/jsdoc decides which imports are allowed</title>
-	<desc id="desc">sub/foo.ts exports api tagged @public, helper tagged @package and secret without a tag, which makes it @private. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.</desc>
+	<desc id="desc">sub/foo.ts exports api tagged @public, helper without a tag, which makes it @package, and secret tagged @private. sub/bar.ts, in the same package, can import api and helper but not secret. src/main.ts, outside the package, can import only api.</desc>
 	<style>
 		.bg { fill: #ffffff }
 		.card { fill: #f6f8fa; stroke: #d0d7de }
@@ -56,9 +56,9 @@
 	<line class="rule" x1="64" y1="124" x2="380" y2="124" />
 	<text class="code" x="80" y="146"><tspan class="cm">/** </tspan><tspan class="ok b">@public</tspan><tspan class="cm"> */</tspan></text>
 	<text class="code text" x="80" y="168"><tspan class="kw">export const</tspan> api = 1</text>
-	<text class="code" x="80" y="200"><tspan class="cm">/** </tspan><tspan class="pkg b">@package</tspan><tspan class="cm"> */</tspan></text>
+	<text class="code" x="80" y="200"><tspan class="cm">// no tag → </tspan><tspan class="pkg b">@package</tspan></text>
 	<text class="code text" x="80" y="222"><tspan class="kw">export const</tspan> helper = 2</text>
-	<text class="code" x="80" y="254"><tspan class="cm">// no tag → </tspan><tspan class="err b">@private</tspan></text>
+	<text class="code" x="80" y="254"><tspan class="cm">/** </tspan><tspan class="err b">@private</tspan><tspan class="cm"> */</tspan></text>
 	<text class="code text" x="80" y="276"><tspan class="kw">export const</tspan> secret = 3</text>
 
 	<!-- sub/bar.ts: importer inside the package -->
@@ -106,5 +106,5 @@
 	<text class="text" x="160" y="465">no file</text>
 	<rect class="none-pill" x="64" y="480" width="84" height="24" rx="12" />
 	<text class="file muted" x="106" y="497" text-anchor="middle">no tag</text>
-	<text class="text" x="160" y="497">same as @private (default)</text>
+	<text class="text" x="160" y="497">same as @package (default)</text>
 </svg>

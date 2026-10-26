@@ -1,15 +1,19 @@
 import { testFixtures } from "../harness.ts"
 
-// This rule's own defaults: unlike upstream's, exports without an access tag are private.
+// This rule's own defaults: unlike upstream's, exports without an access tag are package-private.
 testFixtures(
 	"defaults",
 	[
 		{
-			name: "defaults > @public exports can be imported, untagged ones are private",
+			name: "defaults > untagged exports can be imported from their own package",
+			file: "src/reexport/useBar.ts",
+		},
+		{
+			name: "defaults > untagged exports are package-private",
 			file: "src/reexport3/sub.ts",
 			errors: [
 				{
-					messageId: "private",
+					messageId: "package",
 					data: { identifier: "subBar" },
 					line: 2,
 					column: 10,
@@ -19,7 +23,7 @@ testFixtures(
 			],
 		},
 		{
-			name: "defaults > untagged exports are private, @package ones stay package-private",
+			name: "defaults > untagged default exports are package-private",
 			file: "src/default-export/foo.ts",
 			errors: [
 				{
@@ -31,7 +35,7 @@ testFixtures(
 					endColumn: 12,
 				},
 				{
-					messageId: "private",
+					messageId: "package",
 					data: { identifier: "default" },
 					line: 2,
 					column: 8,
@@ -53,7 +57,7 @@ testFixtures(
 			file: "src/reexport3/sub3/sub.ts",
 			errors: [
 				{
-					messageId: "private",
+					messageId: "package",
 					data: { identifier: "subBar" },
 					line: 2,
 					column: 10,

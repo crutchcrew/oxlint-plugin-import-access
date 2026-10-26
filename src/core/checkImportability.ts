@@ -18,7 +18,6 @@ import { ModuleResolver } from "./resolveModule.ts"
 /**
  * A violation: the access level of the export, and its name as TypeScript reports it
  * (`default` for default exports, `export=` for `export =`).
- * @package
  */
 export type Violation = {
 	readonly access: "package" | "private"

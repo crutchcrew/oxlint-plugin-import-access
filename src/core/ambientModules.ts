@@ -143,7 +143,6 @@ function moduleBlockExports(
 /**
  * Collect `declare module "name" { … }` blocks of a declaration file that is a script
  * (in a module file the same syntax is a module augmentation, not an ambient module).
- * @package
  */
 export function parseAmbientModules(fileName: string, text: string): Map<string, ModuleExports> {
 	const modules = new Map<string, ModuleExports>()
@@ -199,7 +198,6 @@ type Index = {
 
 /**
  * Index of ambient modules declared in the project's declaration files, built lazily on first use.
- * @package
  */
 export class AmbientModuleIndex {
 	readonly #roots = new Map<string, Index>()
