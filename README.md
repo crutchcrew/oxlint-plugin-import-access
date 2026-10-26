@@ -5,7 +5,7 @@
 [![provenance](https://img.shields.io/badge/provenance-verified-brightgreen)](https://www.npmjs.com/package/@crutchcrew/oxlint-plugin-import-access)
 [![license](https://img.shields.io/npm/l/@crutchcrew/oxlint-plugin-import-access)](./LICENSE)
 
-JSDoc import access for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Only `@public` exports can be imported from anywhere, and an export without an access tag is `@package`: only files in its own directory can import it. Tag an export `@public` to share it with the whole project, or `@private` so no other file can import it. To make untagged exports `@public` or `@private` instead, set [`defaultImportability`](#options).
+JSDoc import access for TypeScript, enforced by [oxlint](https://oxc.rs/docs/guide/usage/linter). Only `@public` exports can be imported from anywhere, and an export without an access tag is `@package`: only files in its own package (its directory and subdirectories) can import it. Tag an export `@public` to share it with the whole project, or `@private` so no other file can import it. To make untagged exports `@public` or `@private` instead, set [`defaultImportability`](#options).
 
 A native oxlint JS plugin port of [eslint-plugin-import-access](https://github.com/uhyo/eslint-plugin-import-access) that needs **no type checker**: no `typescript` dependency, no `tsconfig.json` project loading, no typed linting setup.
 
