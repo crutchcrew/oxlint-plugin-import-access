@@ -43,4 +43,4 @@ When changing semantics, compare against upstream: build upstream `eslint-plugin
 
 ## Release
 
-Merging a `release/vX.Y.Z` PR (with the bumped `package.json` version) tags `vX.Y.Z` and runs `publish.yml`, which publishes to npm with provenance via trusted publishing and creates a GitHub release.
+Merging a `release/vX.Y.Z` PR (with the bumped `package.json` version) tags `vX.Y.Z` and runs `publish.yml`, which publishes to npm with provenance via trusted publishing (skipped if the version is already on npm, as for the hand-published 1.0.0) and creates a GitHub release.
