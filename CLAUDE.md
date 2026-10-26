@@ -27,7 +27,7 @@ bun run bench [n]       # time oxlint on a generated project with n modules (bui
 - `src/rules/jsdoc.ts` — rule meta/schema and `createOnce` visitors (`ImportSpecifier`, `ImportDefaultSpecifier`, `ExportSpecifier` with source). Process-wide `checker`; policies cached by options JSON + cwd.
 - `src/core/checkImportability.ts` — `ImportabilityChecker` (resolver, export tables, ambient modules, `findExport` emulating TS `getImmediateAliasedSymbol`) and `ImportabilityPolicy` (per options: excludes, self-reference, access, package boundaries).
 - `src/core/resolveModule.ts` — oxc-resolver wrapper; classifies internal / external (builtin or `node_modules`, `symlinks: false`) / unresolved (incl. non-module files like `.svg`).
-- `src/core/exportTable.ts` — export table from `parseSync(...).module.staticExports` + comments (never touches `.program`, except lazily for JSDoc inside variable statements); `ExportTableCache` re-validates by mtime/size per generation in long-running hosts.
+- `src/core/exportTable.ts` — export table from `parseSync(...).module.staticExports` + comments (touches `.program` only lazily, for decorators, `export =`, re-exported imports and JSDoc inside variable statements); `ExportTableCache` re-validates by mtime/size per generation in long-running hosts.
 - `src/core/ambientModules.ts` — lazy index of `declare module "x"` / wildcard modules in `.d.ts` files under cwd.
 - `src/utils/jsdoc.ts` — TypeScript-compatible JSDoc attachment and tag parsing.
 - `src/utils/isInPackage.ts` — package boundaries, `indexLoophole`, `filenameLoophole`, `packageDirectory`.

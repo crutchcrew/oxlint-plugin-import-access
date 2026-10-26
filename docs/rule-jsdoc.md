@@ -70,10 +70,10 @@ The `import-access/jsdoc` rule has the following options. All options are option
 
 ```ts
 type JSDocRuleOptions = {
-	indexLoophole: boolean
-	filenameLoophole: boolean
-	defaultImportability: "public" | "package" | "private"
-	treatSelfReferenceAs: "internal" | "external"
+	indexLoophole?: boolean
+	filenameLoophole?: boolean
+	defaultImportability?: "public" | "package" | "private"
+	treatSelfReferenceAs?: "internal" | "external"
 	excludeSourcePatterns?: string[]
 	packageDirectory?: string[]
 }
@@ -360,7 +360,7 @@ The original ESLint rule asks the TypeScript type checker which declaration an i
 
 1. **Resolve** the module specifier like TypeScript does, with [oxc-resolver](https://github.com/oxc-project/oxc-resolver): `tsconfig.json` `paths` and project references, `package.json` `exports`/`types`, `.js` → `.ts` extension mapping, Node.js builtins.
 2. **Skip external modules.** Builtins and files reached through `node_modules` are never checked. Like in TypeScript, this includes workspace packages that are symlinked into `node_modules`.
-3. **Read the exporter's exports** with [oxc-parser](https://github.com/oxc-project/oxc/tree/main/napi/parser). Only the module record and comments are read; the syntax tree is not built. Files are parsed once and cached.
+3. **Read the exporter's exports** with [oxc-parser](https://github.com/oxc-project/oxc/tree/main/napi/parser). Mostly only the module record and comments are read; the syntax tree is used for the few files with decorators, `export =`, re-exported imports (`import { a } from "./a"; export { a }`) or JSDoc inside variable statements. Files are parsed once and cached.
 4. **Find the export.** A direct export of the imported name is the answer, also when it re-exports something from another file (`export { a } from "./a"`): its JSDoc is what counts, exactly like upstream. `export * from` is followed.
 5. **Read the JSDoc** with TypeScript's rules: which comments attach to a declaration, how tags are parsed, and which tag wins.
 6. **Ambient modules.** `declare module "name" { … }` and wildcard declarations such as `declare module "*.svg"` in `.d.ts` files under the working directory are checked like files.

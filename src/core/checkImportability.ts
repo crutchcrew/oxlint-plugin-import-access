@@ -12,7 +12,7 @@ import {
 	ExportTableCache,
 	type ModuleExports,
 } from "./exportTable.ts"
-import { lookupPackageName } from "./lookupPackageJson.ts"
+import { clearPackageNameCache, lookupPackageName } from "./lookupPackageJson.ts"
 import { ModuleResolver } from "./resolveModule.ts"
 
 /**
@@ -137,7 +137,8 @@ export class ImportabilityChecker {
 
 	/**
 	 * Start checking `fileName`. In a long-running host, everything read for earlier files is
-	 * re-validated: exporter files are stat-ed again and specifiers resolved again.
+	 * re-validated: exporter files are stat-ed again, specifiers resolved again and package names
+	 * looked up again.
 	 */
 	nextFile(fileName: string): void {
 		if (!this.#watching) {
@@ -151,6 +152,7 @@ export class ImportabilityChecker {
 		}
 		this.exportTables.nextGeneration()
 		this.resolver.clear()
+		clearPackageNameCache()
 		this.#found = new WeakMap()
 	}
 
@@ -159,6 +161,7 @@ export class ImportabilityChecker {
 		this.resolver.clear()
 		this.exportTables.clear()
 		this.ambientModules.clear()
+		clearPackageNameCache()
 	}
 }
 
