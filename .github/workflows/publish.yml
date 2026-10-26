@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
