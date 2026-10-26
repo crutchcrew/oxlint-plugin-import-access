@@ -2,11 +2,11 @@
 
 ## @crutchcrew/oxlint-plugin-import-access
 
-### Unreleased
+### 1.0.1
 
 - In long-running hosts such as the oxlint language server, the `package.json` name used for `treatSelfReferenceAs` is looked up again for every linted file, like exporter files and resolved specifiers, instead of being cached for the whole process.
 - Docs: the syntax tree is built for a few files (decorators, `export =`, re-exported imports, JSDoc inside variable statements), not never; all rule options are optional.
-- CI: the lockfile check fails on drift; a plain `bun install` used to rewrite the lockfile first.
+- CI: the lockfile check fails on drift; a plain `bun install` used to rewrite the lockfile first. The release workflows run on the same runner as CI; the one they used never started.
 
 ### 1.0.0
 
