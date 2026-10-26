@@ -1,4 +1,4 @@
-# oxlint-plugin-import-access 📦🔒
+# @crutchcrew/oxlint-plugin-import-access 📦🔒
 
 [![npm version](https://img.shields.io/npm/v/@crutchcrew/oxlint-plugin-import-access)](https://www.npmjs.com/package/@crutchcrew/oxlint-plugin-import-access)
 [![coverage](https://img.shields.io/endpoint?url=https://crutchcrew.github.io/oxlint-plugin-import-access/badges/coverage.json)](https://github.com/crutchcrew/oxlint-plugin-import-access/actions)
