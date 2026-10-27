@@ -24,7 +24,7 @@ tester.run("jsdoc (inline code)", rule, {
 			code: "export const value = 1",
 		},
 		{
-			name: "namespace imports are not checked",
+			name: "namespace imports used as a whole are not checked",
 			filename: inReexport("namespace.ts"),
 			code: 'import * as sub from "./sub/foo"\nconsole.log(sub)',
 		},
