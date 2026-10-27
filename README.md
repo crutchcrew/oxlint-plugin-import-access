@@ -38,7 +38,7 @@ This plugin adds a directory-level layer between a file and the whole project: a
 | **Checks unsaved edits in the editor** | ✅           | ✅                                                                                 | ❌ skipped until saved                                                                   |
 | **Same results as the original rule**  | ✅ verified¹ | –                                                                                  | ✅                                                                                       |
 
-¹ With `defaultImportability: "public"`, which makes exports without an access tag `@public` like in the original. This plugin's default is `"package"`.
+¹ With `defaultImportability: "public"`, which makes exports without an access tag `@public` like in the original. This plugin's default is `"package"`. This plugin also checks the members used through namespace imports (`import * as foo`), which the original doesn't check.
 
 ## Install
 

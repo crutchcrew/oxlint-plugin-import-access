@@ -2,6 +2,10 @@
 
 ## @crutchcrew/oxlint-plugin-import-access
 
+### Unreleased
+
+- Namespace imports are checked: `import * as foo from "./foo"` reports `foo.name`, `foo["name"]` and types such as `foo.Name` when `name` couldn't be imported by name. Upstream doesn't check namespace imports.
+
 ### 1.0.1
 
 - In long-running hosts such as the oxlint language server, the `package.json` name used for `treatSelfReferenceAs` is looked up again for every linted file, like exporter files and resolved specifiers, instead of being cached for the whole process.

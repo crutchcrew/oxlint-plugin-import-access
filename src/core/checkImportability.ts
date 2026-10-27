@@ -203,6 +203,25 @@ export class ImportabilityPolicy {
 		)
 	}
 
+	#targetModule(
+		checker: ImportabilityChecker,
+		importerFileName: string,
+		specifier: string,
+	): ModuleExports | undefined {
+		const { defaultImportability, projectDirectory } = this.options
+		// Exports without access tags are public, so files without any tag need no parsing.
+		const assumeAllPublic = defaultImportability === "public"
+		return checker.targetModule(importerFileName, specifier, projectDirectory, assumeAllPublic)
+	}
+
+	/**
+	 * Whether some export of `specifier` could be reported. Cheap way to skip namespace imports
+	 * of external modules and of modules whose exports are all public.
+	 */
+	mayReport(checker: ImportabilityChecker, importerFileName: string, specifier: string): boolean {
+		return this.#targetModule(checker, importerFileName, specifier)?.names !== undefined
+	}
+
 	/**
 	 * Check importing `name` (the export name, `default` for default imports) via `specifier`.
 	 */
@@ -212,15 +231,8 @@ export class ImportabilityPolicy {
 		specifier: string,
 		name: string,
 	): Violation | undefined {
-		const { defaultImportability, projectDirectory } = this.options
-		// Exports without access tags are public, so files without any tag need no parsing.
-		const assumeAllPublic = defaultImportability === "public"
-		const module = checker.targetModule(
-			importerFileName,
-			specifier,
-			projectDirectory,
-			assumeAllPublic,
-		)
+		const { defaultImportability } = this.options
+		const module = this.#targetModule(checker, importerFileName, specifier)
 		const found = module && checker.findExport(module, name)
 		if (found === undefined || !found.entries[0]!.checked) {
 			return undefined

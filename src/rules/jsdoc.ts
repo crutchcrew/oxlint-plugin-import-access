@@ -40,6 +40,29 @@ function nameOf(
 	return node.type === "Literal" ? node.value : node.name
 }
 
+/**
+ * The member that `identifier`, a reference to a namespace import, accesses:
+ * `ns.name`, `ns["name"]` or the type `ns.Name`.
+ */
+function accessedMember(
+	identifier: ESTree.Node,
+): { readonly node: ESTree.Node; readonly name: string } | undefined {
+	// References always have a parent.
+	const parent = identifier.parent!
+	if (parent.type === "MemberExpression" && parent.object === identifier) {
+		const { property } = parent
+		if (property.type === "Identifier" && !parent.computed) {
+			return { node: property, name: property.name }
+		}
+		if (property.type === "Literal" && typeof property.value === "string") {
+			return { node: property, name: property.value }
+		}
+	} else if (parent.type === "TSQualifiedName") {
+		return { node: parent.right, name: parent.right.name }
+	}
+	return undefined
+}
+
 type MessageId = "package" | "package:reexport" | "private" | "private:reexport"
 
 const rule: CreateOnceRule = {
@@ -106,6 +129,21 @@ const rule: CreateOnceRule = {
 			},
 			ImportDefaultSpecifier(node) {
 				check(node, (node.parent as ESTree.ImportDeclaration).source.value, "default", false)
+			},
+			ImportNamespaceSpecifier(node) {
+				const specifier = (node.parent as ESTree.ImportDeclaration).source.value
+				// Scope analysis is costly: only run it when some member could be reported.
+				if (!policy.mayReport(checker, importer, specifier)) {
+					return
+				}
+				for (const variable of context.sourceCode.getDeclaredVariables(node)) {
+					for (const { identifier } of variable.references) {
+						const member = accessedMember(identifier)
+						if (member !== undefined) {
+							check(member.node, specifier, member.name, false)
+						}
+					}
+				}
 			},
 			ExportSpecifier(node) {
 				const { source } = node.parent as ESTree.ExportNamedDeclaration

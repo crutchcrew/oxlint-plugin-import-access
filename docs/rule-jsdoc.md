@@ -64,6 +64,20 @@ import { fooPublicVariable } from "./sub/foo"
 import { fooPackageVariable } from "./sub/foo"
 ```
 
+Namespace imports are checked by the members they access, `foo.name`, `foo["name"]` and types such as `foo.Name`:
+
+```ts
+// ----- baz.ts -----
+import * as foo from "./sub/foo"
+
+// This is correct
+console.log(foo.fooPublicVariable)
+// This is INCORRECT, like importing fooPrivateVariable by name
+console.log(foo.fooPrivateVariable)
+```
+
+Uses of the whole namespace object, such as passing `foo` to a function, are not checked.
+
 ## Options
 
 The `import-access/jsdoc` rule has the following options. All options are optional (see below for default values).
@@ -370,6 +384,7 @@ Results match upstream on its whole test suite and on additional fixtures for re
 ### Differences from upstream
 
 - **Default access**: exports without an access tag are `@package` (`defaultImportability: "package"`); upstream treats them as `@public`. Set `defaultImportability: "public"` for upstream's behavior.
+- **Namespace imports** (`import * as foo from "./foo"`): members accessed through them are checked. Upstream doesn't check namespace imports at all.
 - **Symlinked workspace packages** are always external, even when your root `tsconfig.json` includes their sources. Upstream checks them in that case.
 - **Ambient module declarations** are only read from `.d.ts` files outside `node_modules` and hidden directories, and only from files that are not modules themselves. In the language server, restart it after adding new ambient declarations.
 - **Only the nearest `tsconfig.json`** is used for `paths`. Aliases defined in a differently named config file (such as `tsconfig.app.json`) that isn't referenced from `tsconfig.json` are not resolved.

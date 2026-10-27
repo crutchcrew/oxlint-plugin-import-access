@@ -33,6 +33,8 @@ export default defineConfig({
 			rules: {
 				"import-access/jsdoc": "off",
 				"import/default": "off",
+				"import/namespace": "off",
+				"no-shadow": "off",
 				"no-unassigned-vars": "off",
 				"no-var": "off",
 				"prefer-const": "off",
