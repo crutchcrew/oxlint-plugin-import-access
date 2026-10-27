@@ -2,7 +2,7 @@
 
 ## @crutchcrew/oxlint-plugin-import-access
 
-### Unreleased
+### 1.1.0
 
 - Namespace imports are checked: `import * as foo from "./foo"` reports `foo.name`, `foo["name"]` and types such as `foo.Name` when `name` couldn't be imported by name. Upstream doesn't check namespace imports.
 
